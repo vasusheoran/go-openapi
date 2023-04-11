@@ -4,32 +4,32 @@ components:
         ErrorResponse:
             type: object
             properties:
-                Message:
+                message:
                     type: string
         SampleRequest1:
             type: object
             properties:
-                Field3:
+                field3:
                     type: string
         SampleRequest2:
             type: object
             properties:
-                Field5:
+                field5:
                     type: string
-                Field6:
+                field6:
                     type: integer
                     format: int
-                SampleResponse1:
+                sample_response_1:
                     $ref: '#/components/schemas/SampleResponse1'
         SampleResponse1:
             type: object
             properties:
-                Field4:
+                field4:
                     type: string
         SampleResponse2:
             type: object
             properties:
-                Field2:
+                field2:
                     type: string
 info:
     title: My API

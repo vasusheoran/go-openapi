@@ -195,18 +195,17 @@ func (p *Parser) GetTypeSpec(t ast.Expr) *ast.TypeSpec {
 	return nil
 }
 
-//func (p *Parser) GetTypeSpec(t ast.Expr) *ast.TypeSpec {
-//	switch t := t.(type) {
-//	case *ast.StarExpr:
-//		return p.GetTypeSpec(t.X)
-//	case *ast.Ident:
-//		if ts, ok := p.typeMap[t.Name]; ok {
-//			return ts
+//	func (p *Parser) GetTypeSpec(t ast.Expr) *ast.TypeSpec {
+//		switch t := t.(type) {
+//		case *ast.StarExpr:
+//			return p.GetTypeSpec(t.X)
+//		case *ast.Ident:
+//			if ts, ok := p.typeMap[t.Name]; ok {
+//				return ts
+//			}
 //		}
+//		return nil
 //	}
-//	return nil
-//}
-
 func (p *Parser) ParseStructType(ts *ast.TypeSpec) *openapi3.Schema {
 	structType := ts.Type.(*ast.StructType)
 	if structType.Fields == nil || len(structType.Fields.List) == 0 {
@@ -227,7 +226,7 @@ func (p *Parser) ParseStructType(ts *ast.TypeSpec) *openapi3.Schema {
 		}
 
 		// Get the name and type of the field.
-		fieldName := field.Names[0].Name
+		//fieldName := field.Names[0].Name
 		fieldType := field.Type
 
 		// Parse the type of the field into an OpenAPI schema.
@@ -241,23 +240,16 @@ func (p *Parser) ParseStructType(ts *ast.TypeSpec) *openapi3.Schema {
 		tag := reflect.StructTag(field.Tag.Value[1 : len(field.Tag.Value)-1]).Get("json")
 		jsonTag, opts := parseJSONTag(tag)
 		if jsonTag == "" {
-			// Skip fields without JSON tags
+			// Skip fields without JSON tags.
 			continue
 		}
-		//
-		//openApiTag := reflect.StructTag(field.Tag.Value[1 : len(field.Tag.Value)-1]).Get("openapi")
-		//optsName, opts := parseJSONTag(openApiTag)
-		//if optsName == "" {
-		//	// Skip JSON tags without property names
-		//	continue
-		//}
 
-		// Add the field's schema to the struct schema.
-		schema.Properties[fieldName] = fieldSchemaRef
+		// Add the field's schema to the struct schema using the JSON tag as the property name.
+		schema.Properties[jsonTag] = fieldSchemaRef
 
 		// If the field is required, add it to the list of required fields.
 		if opts.Contains("required") {
-			required = append(required, fieldName)
+			required = append(required, jsonTag)
 		}
 
 		// Update the type map with the schema for the field's type.
