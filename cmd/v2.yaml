@@ -1,0 +1,39 @@
+openapi: 3.0.0
+components:
+    schemas:
+        ErrorResponse:
+            type: object
+            properties:
+                Message:
+                    type: string
+        SampleRequest1:
+            type: object
+            properties:
+                Field3:
+                    type: string
+        SampleRequest2:
+            type: object
+            properties:
+                Field5:
+                    type: string
+                Field6:
+                    type: integer
+                    format: int
+                SampleResponse1:
+                    $ref: '#/components/schemas/SampleResponse1'
+        SampleResponse1:
+            type: object
+            properties:
+                Field4:
+                    type: string
+        SampleResponse2:
+            type: object
+            properties:
+                Field2:
+                    type: string
+info:
+    title: My API
+    version: 1.0.0
+paths: {}
+servers:
+    - url: http://localhost:8080
