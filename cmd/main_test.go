@@ -5,17 +5,8 @@ import (
 	"testing"
 )
 
-func Test_main_1(t *testing.T) {
-	os.Args = []string{"cmd", "--inputDir", "../scan/testdata/v1.go", "--outputDir", "."}
-	main()
-}
-
 func Test_main_2(t *testing.T) {
-	os.Args = []string{"cmd", "--inputDir", "../scan/testdata/v2.go", "--output", "./v2.yaml"}
-	main()
-}
-
-func Test_main_3(t *testing.T) {
-	os.Args = []string{"cmd", "--inputDir", "../scan/testdata/v2.go", "--output", "./v3.json", "--outputType", "json"}
+	//os.Args = []string{"cmd", "--inputDir", "../scan/testdata/pets.go", "--output", "v2.yaml"}
+	os.Args = []string{"cmd", "--dir", "../scan/testdata/pets", "--level", "warn"}
 	main()
 }

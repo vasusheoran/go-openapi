@@ -1,0 +1,140 @@
+openapi: 3.0.0
+components:
+    schemas:
+        Category:
+            type: object
+            properties:
+                id:
+                    type: number
+                    format: text
+                    description: Pet ID
+                    default: "1"
+                    example: "1"
+                name:
+                    type: string
+                    format: text
+                    description: Category name for the pets
+                    enum:
+                        - cat
+                        - dog
+                    default: cat
+                    example: dog
+        CreatePetRequest:
+            type: object
+            properties:
+                category:
+                    $ref: '#/components/schemas/Category'
+                id:
+                    type: number
+                    format: text
+                    description: Pet ID
+                    default: "1"
+                    example: "1"
+                name:
+                    type: string
+                    format: text
+                    description: Name of the pet
+                    default: tommy
+                    example: rambo
+        CreatePetResponse:
+            type: object
+            properties:
+                name:
+                    type: array
+                    format: array
+                    description: Contains list of pet name
+                    default: '[a,b,c]'
+                    example: '[a,b,c]'
+                    items:
+                        type: string
+        ErrorResponse:
+            type: object
+            properties:
+                msg:
+                    type: string
+                    format: text
+                    description: Error message
+                    default: 404 not found
+                    example: 404 not found
+                    deprecated: true
+        GetPetByIDResponse:
+            type: object
+            properties:
+                category:
+                    $ref: '#/components/schemas/Category'
+                name:
+                    type: string
+                    format: text
+                    description: Name of the pet
+                    default: tommy
+                    example: rambo
+info:
+    title: My API
+    description: |-
+        This is a sample Pet Store Server based on the OpenAPI 3.1 specification.  You can find out more about
+        Swagger at [https://swagger.io](https://swagger.io). In the third iteration of the pet store, we've switched to the design first approach!
+        You can now help us improve the API whether it's by making changes to the definition itself or to the code.
+        That way, with time, we can improve the API in general, and expose some of the new features in OAS3.
+
+        Some useful links:
+        - [The Pet Store repository](https://github.com/swagger-api/swagger-petstore)
+        - [The source API definition for the Pet Store](https://github.com/swagger-api/swagger-petstore/blob/master/src/main/resources/openapi.yaml)
+    version: 1.0.0
+paths:
+    /pet:
+        get:
+            tags:
+                - pet
+            summary: Adds a new pet to the store
+            description: Adds a new pet to the store
+            operationId: CreatePet
+            responses:
+                "200":
+                    description: ""
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/CreatePetResponse'
+                "400":
+                    description: ""
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+    /pet/{petId}:
+        get:
+            tags:
+                - pet1
+            summary: Find pet by ID
+            description: Returns a single pet
+            operationId: GetPetByIDOp
+            parameters:
+                - name: name
+                  in: query
+                  description: '"Name of pet that needs to be updated"'
+                  schema:
+                    type: string
+                - name: petId
+                  in: path
+                  description: '"ID of pet that needs to be updated"'
+                  required: true
+                  schema:
+                    type: string
+                - name: x-agent-id
+                  in: header
+                  description: '"Agent ID for the request"'
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "400":
+                    description: ""
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+servers:
+    - url: http://localhost:8080
+tags:
+    - name: pet
+      description: Everything about your Pets

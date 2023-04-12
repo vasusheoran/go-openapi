@@ -1,9 +1,10 @@
 package scan
 
 import (
-	"fmt"
 	"github.com/getkin/kin-openapi/openapi3"
 	"go/ast"
+	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -13,42 +14,69 @@ func (p *Parser) ParseInterfaceType(ts *ast.TypeSpec) {
 		// If the interface has no methods, there's nothing to do.
 		return
 	}
-
-	// Parse the comments for the interface.
+	var ic *interfaceComments
+	// Parse the comments for the interface and add tags
 	c, ok := p.comments[ts.Name.Name]
-	if !ok {
-		fmt.Printf("no comments found for method %s\n", ts.Name.Name)
+	if ok {
+		ic = getInterfaceComments(c)
+
+		if len(ic.Name) == 0 {
+			p.logger.Error("must have `openapi:name` annotation for %s", ts.Name.Name)
+			return
+		}
+
+		tag := &openapi3.Tag{
+			Name:        ic.Name,
+			Description: ic.Description,
+		}
+
+		ed := openapi3.ExternalDocs{}
+		if len(ic.ExternalDocs.URL) > 0 {
+			ed.URL = ic.ExternalDocs.URL
+		}
+		if len(ic.ExternalDocs.Description) > 0 {
+			ed.Description = ic.ExternalDocs.Description
+		}
+
+		if len(ic.ExternalDocs.URL) > 0 || len(ic.ExternalDocs.Description) > 0 {
+			tag.ExternalDocs = &ed
+		}
+
+		p.spec.Tags = append(p.spec.Tags, tag)
+	} else {
+		p.logger.Debug("no comments found for %s", ts.Name.Name)
 	}
-	ic := getInterfaceComments(c)
 
-	for i, m := range interfaceType.Methods.List {
-		// Parse the comments for the method.
-		c, ok = p.comments[m.Names[0].Name]
-		if !ok {
-			fmt.Printf("no comments found for method %s\n", m.Names[i].Name)
-			continue
-		}
-		mc := p.getMethodComments(c)
-		if mc == nil {
-			fmt.Printf("no comments found for method %s, continue to parse next method", m.Names[i].Name)
-			continue
-		}
-
-		// Create the operation for the method and add it to the appropriate path in the OpenAPI spec.
+	for _, field := range interfaceType.Methods.List {
 		op := &openapi3.Operation{}
-		if ic.Summary != "" {
-			op.Summary = ic.Summary
+
+		key := filepath.Join(ts.Name.Name, field.Names[0].Name)
+
+		// Parse the comments for the method.
+		c, ok = p.comments[key]
+		if !ok {
+			p.logger.Warn("no comments found for %s", key)
+			continue
+		}
+		mc := p.getMethodComments(c, key)
+		if mc == nil {
+			p.logger.Warn("failed to parse comments for %s", key)
+			continue
+		}
+
+		if mc.Summary != "" {
+			op.Summary = mc.Summary
 		} else {
 			op.Summary = strings.ReplaceAll(mc.Summary, "\n", " ")
 		}
-		if ic.Description != "" {
-			op.Description = ic.Description
+		if mc.Description != "" {
+			op.Description = mc.Description
 		} else {
 			op.Description = strings.ReplaceAll(mc.Description, "\n", " ")
 		}
-		op.OperationID = ic.ID
-		if ic.Tags != nil {
-			op.Tags = ic.Tags
+		op.OperationID = mc.ID
+		if mc.Tags != nil {
+			op.Tags = mc.Tags
 		} else {
 			op.Tags = mc.Tags
 		}
@@ -57,28 +85,30 @@ func (p *Parser) ParseInterfaceType(ts *ast.TypeSpec) {
 		// op.RequestBody
 		// op.Responses
 
-		op.RequestBody = p.ParseRequestType(mc)
+		op.RequestBody = getRequestBodyFromMethodComments(mc)
 
-		successResponse, err := p.ParseResponseType(mc.Success)
+		op.Parameters = getParametersFromMethodComments(mc.Parameters)
+
+		successResponse, err := getResponseFromMethodComments(mc.Success)
 		if err != nil {
-			fmt.Println(err)
+			p.logger.Warn("failed to parse error response for %s", key)
 			continue
 		}
 
-		failureResponse, err := p.ParseResponseType(mc.Failure)
+		failureResponse, err := getResponseFromMethodComments(mc.Failure)
 		if err != nil {
-			fmt.Println(err)
+			p.logger.Warn("failed to parse error response for %s", key)
 			continue
 		}
 
 		op.Responses = make(openapi3.Responses)
 
 		if successResponse != nil {
-			op.Responses["200"] = successResponse
+			op.Responses[strconv.Itoa(mc.Success.Code)] = successResponse
 		}
 
 		if failureResponse != nil {
-			op.Responses["default"] = failureResponse
+			op.Responses[strconv.Itoa(mc.Failure.Code)] = failureResponse
 		}
 
 		// Set the operation tags.
@@ -87,7 +117,7 @@ func (p *Parser) ParseInterfaceType(ts *ast.TypeSpec) {
 		}
 
 		// Get or create the path item for the method's path.
-		path := strings.Join([]string{ic.Path, mc.Path}, "")
+		path := strings.Join([]string{ic.BasePath, mc.Path}, "")
 		pathItem := p.getPathItem(path)
 		if p == nil {
 			pathItem = &openapi3.PathItem{}
@@ -113,6 +143,7 @@ func (p *Parser) ParseInterfaceType(ts *ast.TypeSpec) {
 			pathItem.Trace = op
 		default:
 			// If the method name isn't recognized, skip it.
+			p.logger.Warn("unrecognized method for %s: %s", key, mc.Method)
 			continue
 		}
 

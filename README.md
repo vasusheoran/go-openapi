@@ -3,14 +3,15 @@ go-openapi is a Go program that generates an OpenAPI 3.0 specification for a giv
 ## Installation
 To install go-openapi, use the following command:
 ```shell
-go get github.com/{YOUR_GITHUB_USERNAME}/go-openapi
+go build cmd/main.go
 ```
 ## Usage
 To generate an OpenAPI specification for your Go application, run the following command:
 ```shell
-go-openapi <output_directory> <output_format>
+go-openapi --dir <path/to/dir> --output </path/to/output.yaml>
 ```
-The `output_directory` argument specifies the directory where the generated specification file(s) will be saved. The `output_format` argument specifies the desired format for the output file(s), which can be either `json` or `yaml`.
+The `output` argument specifies the file path where the generated specification file will be saved. 
+The `dir` argument specifies the project dir that will be scanned.
 ## Contributing
 If you would like to contribute to go-openapi, please feel free to submit a pull request with your changes.
 ## License

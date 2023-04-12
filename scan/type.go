@@ -5,6 +5,22 @@ import (
 	"strings"
 )
 
+type structComment struct {
+	Description string
+	OperationID string
+}
+
+type fieldComment struct {
+	Description string
+	Example     string
+	Deprecated  bool
+	Nullable    bool
+	Format      string
+	Default     string
+	Enum        []interface{}
+	//Type        string // Extracted from field schema
+}
+
 type tagOptions map[string]bool
 
 func (opts tagOptions) Contains(key string) bool {
@@ -27,7 +43,7 @@ func parseJSONTag(tag string) (string, tagOptions) {
 	return name, options
 }
 
-func ParseTypeExpr(expr ast.Expr) string {
+func getOpenAPIFieldType(expr ast.Expr) string {
 	switch t := expr.(type) {
 	case *ast.Ident:
 		switch t.Name {
@@ -38,14 +54,14 @@ func ParseTypeExpr(expr ast.Expr) string {
 		case "int", "int8", "int16", "int32", "uint", "uint8", "uint16", "uint32", "float32", "float64":
 			return "number"
 		default:
-			return t.Name
+			return "object"
 		}
 	case *ast.ArrayType:
 		return "array"
 	case *ast.MapType:
 		return "object"
 	case *ast.StarExpr:
-		return ParseTypeExpr(t.X)
+		return getOpenAPIFieldType(t.X)
 	default:
 		return ""
 	}

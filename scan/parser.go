@@ -6,32 +6,39 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"reflect"
+	"os"
+	"path/filepath"
+	"strings"
 )
 
 // Parser is a struct that holds the state of the parser.
 type Parser struct {
-	fileSet        *token.FileSet
-	spec           *openapi3.T
-	CurrentPath    string
-	CurrentOp      string
-	CurrentContent *openapi3.MediaType
-	typeMap        map[string]*ast.TypeSpec
-	file           *ast.File
-	paths          map[string]*openapi3.PathItem
-	comments       map[string][]string
-	structs        map[string]struct{}
+	fileSet     *token.FileSet
+	spec        *openapi3.T
+	packageName string
+	file        *ast.File
+	logger      *Logger
+	comments    map[string][]string
+	typeMap     map[string]*ast.TypeSpec
+	structs     map[string]*ast.TypeSpec
+	interfaces  map[string]*ast.TypeSpec
+	methods     map[string]*ast.FuncDecl
+	paths       map[string]*openapi3.PathItem
+	schemaMap   map[string]*openapi3.Schema
+	operations  map[string]*openapi3.Operation
 }
 
 // NewParser creates a new instance of the Parser struct.
 func NewParser() *Parser {
 	return &Parser{
+		logger:  NewLogger(""),
 		fileSet: token.NewFileSet(),
 		spec: &openapi3.T{
 			OpenAPI: "3.0.0",
 			Info: &openapi3.Info{
-				Title:   "My API",
-				Version: "1.0.0",
+				Title:       "My API",
+				Version:     "1.0.0",
+				Description: "This is a sample Pet Store Server based on the OpenAPI 3.1 specification.  You can find out more about\nSwagger at [https://swagger.io](https://swagger.io). In the third iteration of the pet store, we've switched to the design first approach!\nYou can now help us improve the API whether it's by making changes to the definition itself or to the code.\nThat way, with time, we can improve the API in general, and expose some of the new features in OAS3.\n\nSome useful links:\n- [The Pet Store repository](https://github.com/swagger-api/swagger-petstore)\n- [The source API definition for the Pet Store](https://github.com/swagger-api/swagger-petstore/blob/master/src/main/resources/openapi.yaml)",
 			},
 			Servers: openapi3.Servers{
 				&openapi3.Server{URL: "http://localhost:8080"},
@@ -41,66 +48,120 @@ func NewParser() *Parser {
 				Schemas: map[string]*openapi3.SchemaRef{},
 			},
 		},
-		paths:    map[string]*openapi3.PathItem{},
-		typeMap:  make(map[string]*ast.TypeSpec),
-		comments: map[string][]string{},
-		structs:  map[string]struct{}{},
+		comments:   map[string][]string{},
+		paths:      map[string]*openapi3.PathItem{},
+		typeMap:    make(map[string]*ast.TypeSpec),
+		schemaMap:  map[string]*openapi3.Schema{},
+		operations: map[string]*openapi3.Operation{},
+		structs:    map[string]*ast.TypeSpec{},
+		methods:    map[string]*ast.FuncDecl{},
+		interfaces: map[string]*ast.TypeSpec{},
 	}
 }
 
-func (p *Parser) GetSpec() *openapi3.T {
-	return p.spec
+func (p Parser) WithLogLevel(level string) {
+	p.logger.level = GetLogLevel(level)
 }
 
-// ParseFile parses a Go source code file and updates the OpenAPI specs based on the comments in the file.
-func (p *Parser) ParseFile(filename string) error {
-	file, err := parser.ParseFile(p.fileSet, filename, nil, parser.ParseComments)
-	if err != nil {
-		return err
+func (p *Parser) GetSpec(dir string) (*openapi3.T, error) {
+	err := p.parseDir(dir)
+	for _, spec := range p.structs {
+		p.ParseStructType("", spec)
 	}
+	for _, spec := range p.interfaces {
+		p.ParseInterfaceType(spec)
+	}
+	return p.spec, err
+}
 
-	p.file = file
+func (p *Parser) parseDir(dir string) error {
+	return filepath.Walk(dir, func(filePath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() {
+			// Skip directories
+			return nil
+		}
+
+		// Parse only .go files
+		if filepath.Ext(filePath) != ".go" {
+			return nil
+		}
+
+		// Parse the file
+		file, err := parser.ParseFile(token.NewFileSet(), filePath, nil, parser.ParseComments)
+		if err != nil {
+			return err
+		}
+
+		p.file = file
+
+		// Process the file
+		return p.ProcessFile(file)
+	})
+}
+
+func (p *Parser) ProcessFile(file *ast.File) error {
+	p.logger.Info("processing package: %s", file.Name.Name)
+	// Store the package name
+	p.packageName = file.Name.Name
+
+	// Traverse the AST to find structs, methods, and interfaces
 
 	for _, decl := range file.Decls {
-		switch decl := decl.(type) {
+		switch declType := decl.(type) {
 		case *ast.GenDecl:
-			switch decl.Tok {
+			switch declType.Tok {
 			case token.TYPE:
 				// Handle type declarations
-				for _, spec := range decl.Specs {
+				for _, spec := range declType.Specs {
 					if ts, ok := spec.(*ast.TypeSpec); ok {
-						//intfDecl := decl.(*ast.GenDecl)
-						for _, c := range decl.Doc.List {
-							list, ok := p.comments[ts.Name.Name]
-							if !ok {
-								list = []string{}
-							}
-							list = append(list, c.Text)
-							p.comments[ts.Name.Name] = list
-						}
 
 						switch ts.Type.(type) {
 						case *ast.StructType:
-							p.structs[ts.Name.Name] = struct{}{}
-							p.ParseStructType(ts)
+							if _, ok := p.structs[ts.Name.Name]; ok {
+								return fmt.Errorf("duplicate struct `%s` are not supported", ts.Name.Name)
+							}
+
+							t, ok := ts.Type.(*ast.StructType)
+							if !ok {
+								break
+							}
+							p.parseCommentGroup(ts.Name.Name, declType.Doc)
+
+							for _, field := range t.Fields.List {
+								key := filepath.Join(ts.Name.Name, field.Names[0].Name)
+								if field.Doc == nil {
+									p.logger.Warn("no openapi tag found for %s", key)
+									continue
+								}
+								p.parseCommentGroup(key, field.Doc)
+							}
+
+							p.structs[ts.Name.Name] = ts
 						case *ast.InterfaceType:
 							iface, ok := ts.Type.(*ast.InterfaceType)
 							if !ok {
 								break
 							}
 
+							p.parseCommentGroup(ts.Name.Name, declType.Doc)
+
 							for _, field := range iface.Methods.List {
-								for _, c := range field.Doc.List {
-									list, ok := p.comments[field.Names[0].Name]
-									if !ok {
-										list = []string{}
-									}
-									list = append(list, c.Text)
-									p.comments[field.Names[0].Name] = list
+								key := filepath.Join(ts.Name.Name, field.Names[0].Name)
+								if field.Doc == nil {
+									p.logger.Warn("no openapi tag found for %s", key)
+									continue
 								}
+								p.parseCommentGroup(key, field.Doc)
 							}
 
-							p.ParseInterfaceType(ts)
+							if _, ok := p.interfaces[ts.Name.Name]; ok {
+								return fmt.Errorf("duplicate interfaces `%s` are not supported", ts.Name.Name)
+							}
+							p.interfaces[ts.Name.Name] = ts
 						}
 					}
 				}
@@ -111,153 +172,109 @@ func (p *Parser) ParseFile(filename string) error {
 			}
 		case *ast.FuncDecl:
 			// Handle function declarations
+			fn, ok := decl.(*ast.FuncDecl)
+			if !ok {
+				p.logger.Info("error processing func: %s", fn.Name.Name)
+				continue
+			}
+			if _, ok := p.methods[fn.Name.Name]; ok {
+				return fmt.Errorf("duplicate methods `%s` are not supported", fn.Name.Name)
+			}
+			p.parseCommentGroup(fn.Name.Name, fn.Doc)
+			p.methods[fn.Name.Name] = fn
 		}
 	}
 
 	return nil
 }
 
-// ParseTypeExpr returns the OpenAPI schema for the given Go type expression.
-// Returns nil if the expression is not a valid type.
-func (p *Parser) ParseTypeExpr(expr ast.Expr) *openapi3.SchemaRef {
-	switch t := expr.(type) {
-	case *ast.Ident:
-		switch t.Name {
-		case "string":
-			return &openapi3.SchemaRef{Value: &openapi3.Schema{Type: "string"}}
-		case "int", "int32", "int64":
-			return &openapi3.SchemaRef{Value: &openapi3.Schema{Type: "integer", Format: t.Name}}
-		case "float32", "float64":
-			return &openapi3.SchemaRef{Value: &openapi3.Schema{Type: "number", Format: t.Name}}
-		case "bool":
-			return &openapi3.SchemaRef{Value: &openapi3.Schema{Type: "boolean"}}
-		case "[]byte":
-			return &openapi3.SchemaRef{Value: &openapi3.Schema{Type: "string", Format: "byte"}}
-		case "time.Time":
-			return &openapi3.SchemaRef{Value: &openapi3.Schema{Type: "string", Format: "date-time"}}
-		default:
-			ts := p.GetTypeSpec(t)
-			if ts != nil {
-				return &openapi3.SchemaRef{
-					Ref:   fmt.Sprintf("#/components/schemas/%s", ts.Name.Name),
-					Value: p.ParseStructType(ts),
-				}
-			} else {
-				return &openapi3.SchemaRef{
-					Ref:   fmt.Sprintf("#/components/schemas/%s", t.Name),
-					Value: p.ParseStructType(ts),
-				}
-			}
-			return nil
-		}
-	case *ast.ArrayType:
-		itemsSchemaRef := p.ParseTypeExpr(t.Elt)
-		if itemsSchemaRef != nil {
-			return &openapi3.SchemaRef{
-				Value: &openapi3.Schema{
-					Type:  "array",
-					Items: itemsSchemaRef,
-				},
-			}
-		}
-		return nil
+func (p *Parser) parseCommentGroup(name string, cg *ast.CommentGroup) {
+	if cg == nil {
+		p.logger.Warn("no comments found for %s", name)
+		return
 	}
 
-	return nil
-}
-
-func (p *Parser) GetTypeSpec(t ast.Expr) *ast.TypeSpec {
-	switch t := t.(type) {
-	case *ast.StarExpr:
-		return p.GetTypeSpec(t.X)
-	case *ast.Ident:
-		// Look up cache, return value if present
-		if ts, ok := p.typeMap[t.Name]; ok {
-			return ts
-		}
-		// Traverse the package AST to find the type declaration
-		var ts *ast.TypeSpec
-		ast.Inspect(p.file, func(n ast.Node) bool {
-			switch n := n.(type) {
-			case *ast.TypeSpec:
-				if n.Name.Name == t.Name {
-					ts = n
-					return false // Stop traversal
-				}
-			}
-			return true // Continue traversal
-		})
-
-		// Update cache
-		p.typeMap[t.Name] = ts
-		return ts
+	list, ok := p.comments[name]
+	if !ok {
+		list = []string{}
 	}
-	return nil
+
+	for _, c := range cg.List {
+		if !strings.Contains(c.Text, "// openapi:") {
+			continue
+		}
+		list = append(list, c.Text)
+	}
+
+	if len(list) == 0 {
+		p.logger.Debug("no openapi tag found for %s", name)
+		return
+	}
+	p.comments[name] = list
 }
 
-//	func (p *Parser) GetTypeSpec(t ast.Expr) *ast.TypeSpec {
-//		switch t := t.(type) {
-//		case *ast.StarExpr:
-//			return p.GetTypeSpec(t.X)
-//		case *ast.Ident:
-//			if ts, ok := p.typeMap[t.Name]; ok {
-//				return ts
-//			}
-//		}
-//		return nil
+//
+//// parseFile parses a Go source code file and updates the OpenAPI specs based on the comments in the file.
+//func (p *Parser) parseFile(filename string) error {
+//	file, err := parser.ParseFile(p.fileSet, filename, nil, parser.ParseComments)
+//	if err != nil {
+//		return err
 //	}
-func (p *Parser) ParseStructType(ts *ast.TypeSpec) *openapi3.Schema {
-	structType := ts.Type.(*ast.StructType)
-	if structType.Fields == nil || len(structType.Fields.List) == 0 {
-		// If the struct has no fields, there's nothing to do.
-		return nil
-	}
-
-	schema := &openapi3.Schema{
-		Type:       "object",
-		Properties: map[string]*openapi3.SchemaRef{},
-	}
-	required := []string{}
-
-	for _, field := range structType.Fields.List {
-		if field.Tag == nil {
-			// If the field has no tag, skip it.
-			continue
-		}
-
-		// Get the name and type of the field.
-		//fieldName := field.Names[0].Name
-		fieldType := field.Type
-
-		// Parse the type of the field into an OpenAPI schema.
-		fieldSchemaRef := p.ParseTypeExpr(fieldType)
-		if fieldSchemaRef == nil {
-			// If the field type cannot be parsed, skip it.
-			continue
-		}
-
-		// Parse the JSON tag to get the field name and options.
-		tag := reflect.StructTag(field.Tag.Value[1 : len(field.Tag.Value)-1]).Get("json")
-		jsonTag, opts := parseJSONTag(tag)
-		if jsonTag == "" {
-			// Skip fields without JSON tags.
-			continue
-		}
-
-		// Add the field's schema to the struct schema using the JSON tag as the property name.
-		schema.Properties[jsonTag] = fieldSchemaRef
-
-		// If the field is required, add it to the list of required fields.
-		if opts.Contains("required") {
-			required = append(required, jsonTag)
-		}
-
-		// Update the type map with the schema for the field's type.
-		p.typeMap[ts.Name.Name] = ts
-	}
-
-	schema.Required = required
-	// Update the OpenAPI specs with the struct schema.
-	p.spec.Components.Schemas[ts.Name.Name] = &openapi3.SchemaRef{Value: schema}
-	return schema
-}
+//
+//	p.file = file
+//
+//	for _, decl := range file.Decls {
+//		switch decl := decl.(type) {
+//		case *ast.GenDecl:
+//			switch decl.Tok {
+//			case token.TYPE:
+//				// Handle type declarations
+//				for _, spec := range decl.Specs {
+//					if ts, ok := spec.(*ast.TypeSpec); ok {
+//						//intfDecl := decl.(*ast.GenDecl)
+//						for _, c := range decl.Doc.List {
+//							list, ok := p.comments[ts.Name.Name]
+//							if !ok {
+//								list = []string{}
+//							}
+//							list = append(list, c.Text)
+//							p.comments[ts.Name.Name] = list
+//						}
+//
+//						switch ts.Type.(type) {
+//						case *ast.StructType:
+//							//p.structs[ts.Name.Name] = struct{}{}
+//							p.ParseStructType("", ts)
+//						case *ast.InterfaceType:
+//							iface, ok := ts.Type.(*ast.InterfaceType)
+//							if !ok {
+//								break
+//							}
+//
+//							for _, field := range iface.Methods.List {
+//								for _, c := range field.Doc.List {
+//									list, ok := p.comments[field.Names[0].Name]
+//									if !ok {
+//										list = []string{}
+//									}
+//									list = append(list, c.Text)
+//									p.comments[field.Names[0].Name] = list
+//								}
+//							}
+//
+//							p.ParseInterfaceType(ts)
+//						}
+//					}
+//				}
+//			case token.IMPORT:
+//				// Handle import declarations
+//			case token.CONST, token.VAR:
+//				// Handle const and var declarations
+//			}
+//		case *ast.FuncDecl:
+//			// Handle function declarations
+//		}
+//	}
+//
+//	return nil
+//}
