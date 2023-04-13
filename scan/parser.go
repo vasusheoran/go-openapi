@@ -36,9 +36,9 @@ func NewParser() *Parser {
 		spec: &openapi3.T{
 			OpenAPI: "3.0.0",
 			Info: &openapi3.Info{
-				Title:       "My API",
-				Version:     "1.0.0",
-				Description: "This is a sample Pet Store Server based on the OpenAPI 3.1 specification.  You can find out more about\nSwagger at [https://swagger.io](https://swagger.io). In the third iteration of the pet store, we've switched to the design first approach!\nYou can now help us improve the API whether it's by making changes to the definition itself or to the code.\nThat way, with time, we can improve the API in general, and expose some of the new features in OAS3.\n\nSome useful links:\n- [The Pet Store repository](https://github.com/swagger-api/swagger-petstore)\n- [The source API definition for the Pet Store](https://github.com/swagger-api/swagger-petstore/blob/master/src/main/resources/openapi.yaml)",
+				Title:       "Sample Spec - OpenAPI 3.1",
+				Version:     "3.1.0",
+				Description: "Sample description.",
 			},
 			Servers: openapi3.Servers{
 				&openapi3.Server{URL: "http://localhost:8080"},
@@ -109,7 +109,6 @@ func (p *Parser) ProcessFile(file *ast.File) error {
 	p.packageName = file.Name.Name
 
 	// Traverse the AST to find structs, methods, and interfaces
-
 	for _, decl := range file.Decls {
 		switch declType := decl.(type) {
 		case *ast.GenDecl:
@@ -165,10 +164,6 @@ func (p *Parser) ProcessFile(file *ast.File) error {
 						}
 					}
 				}
-			case token.IMPORT:
-				// Handle import declarations
-			case token.CONST, token.VAR:
-				// Handle const and var declarations
 			}
 		case *ast.FuncDecl:
 			// Handle function declarations
@@ -177,11 +172,18 @@ func (p *Parser) ProcessFile(file *ast.File) error {
 				p.logger.Info("error processing func: %s", fn.Name.Name)
 				continue
 			}
+
+			if fn.Name.Name == "main" {
+				p.parseOpenAPIInfo(fn.Pos())
+			}
+
 			if _, ok := p.methods[fn.Name.Name]; ok {
 				return fmt.Errorf("duplicate methods `%s` are not supported", fn.Name.Name)
 			}
 			p.parseCommentGroup(fn.Name.Name, fn.Doc)
 			p.methods[fn.Name.Name] = fn
+		default:
+			p.logger.Debug("not supported")
 		}
 	}
 
@@ -213,68 +215,86 @@ func (p *Parser) parseCommentGroup(name string, cg *ast.CommentGroup) {
 	p.comments[name] = list
 }
 
-//
-//// parseFile parses a Go source code file and updates the OpenAPI specs based on the comments in the file.
-//func (p *Parser) parseFile(filename string) error {
-//	file, err := parser.ParseFile(p.fileSet, filename, nil, parser.ParseComments)
-//	if err != nil {
-//		return err
-//	}
-//
-//	p.file = file
-//
-//	for _, decl := range file.Decls {
-//		switch decl := decl.(type) {
-//		case *ast.GenDecl:
-//			switch decl.Tok {
-//			case token.TYPE:
-//				// Handle type declarations
-//				for _, spec := range decl.Specs {
-//					if ts, ok := spec.(*ast.TypeSpec); ok {
-//						//intfDecl := decl.(*ast.GenDecl)
-//						for _, c := range decl.Doc.List {
-//							list, ok := p.comments[ts.Name.Name]
-//							if !ok {
-//								list = []string{}
-//							}
-//							list = append(list, c.Text)
-//							p.comments[ts.Name.Name] = list
-//						}
-//
-//						switch ts.Type.(type) {
-//						case *ast.StructType:
-//							//p.structs[ts.Name.Name] = struct{}{}
-//							p.ParseStructType("", ts)
-//						case *ast.InterfaceType:
-//							iface, ok := ts.Type.(*ast.InterfaceType)
-//							if !ok {
-//								break
-//							}
-//
-//							for _, field := range iface.Methods.List {
-//								for _, c := range field.Doc.List {
-//									list, ok := p.comments[field.Names[0].Name]
-//									if !ok {
-//										list = []string{}
-//									}
-//									list = append(list, c.Text)
-//									p.comments[field.Names[0].Name] = list
-//								}
-//							}
-//
-//							p.ParseInterfaceType(ts)
-//						}
-//					}
-//				}
-//			case token.IMPORT:
-//				// Handle import declarations
-//			case token.CONST, token.VAR:
-//				// Handle const and var declarations
-//			}
-//		case *ast.FuncDecl:
-//			// Handle function declarations
-//		}
-//	}
-//
-//	return nil
-//}
+// Parse the given comments and extract OpenAPI info
+func (p *Parser) parseOpenAPIInfo(pkgDeclEndPos token.Pos) {
+	if p.file.Doc == nil || len(p.file.Doc.List) == 0 || p.file.Doc.Pos() > pkgDeclEndPos {
+		p.logger.Debug("no openapi info comments found for file %s", p.file.Name.Name)
+		return
+	}
+
+	for i := 0; i < len(p.file.Doc.List); i++ {
+		text := p.file.Doc.List[i].Text
+		if strings.HasPrefix(text, "// openapi:info") {
+			fields := strings.Fields(text[11:])
+			switch fields[0] {
+			case "info":
+				switch fields[1] {
+				case "title": // join " " and trim \"
+					p.spec.Info.Description = strings.Trim(strings.TrimPrefix(p.file.Doc.List[i].Text, "// openapi:info title "), "\"")
+				case "description":
+					start := i + 1
+					if fields[2] == "start" {
+						endIdx := -1
+						for i = i + 1; i < len(p.file.Doc.List); i++ {
+							if strings.Contains(p.file.Doc.List[i].Text, "// openapi:") {
+								endIdx = i
+								break
+							}
+						}
+						if endIdx == -1 {
+							continue
+						}
+						var sb strings.Builder
+						for i = start; i < endIdx; i++ {
+							sb.WriteString(strings.TrimSpace(p.file.Doc.List[i].Text[2:]))
+							sb.WriteString("\n")
+						}
+						p.spec.Info.Description = sb.String()
+					} else {
+						p.spec.Info.Description = strings.Trim(strings.TrimPrefix(p.file.Doc.List[i].Text, "// openapi:info description "), "\"")
+					}
+				case "version":
+					p.spec.Info.Version = strings.Trim(fields[2], "\"")
+				case "oas":
+					p.spec.OpenAPI = strings.Trim(fields[2], "\"")
+				case "server":
+					p.spec.Servers = openapi3.Servers{}
+					serverList := strings.Split(strings.Trim(strings.TrimPrefix(p.file.Doc.List[i].Text, "// openapi:info server "), "\""), " ")
+					for _, url := range serverList {
+						s := &openapi3.Server{
+							URL:         url,
+							Description: "",
+							Variables:   nil,
+						}
+						p.spec.Servers = append(p.spec.Servers, s)
+					}
+				}
+			}
+		}
+	}
+}
+func findPackageDeclEndPos(file *ast.File) token.Pos {
+	// Check if the file has a package declaration
+	if file.Name == nil || file.Name.Name == "" {
+		return file.Pos()
+	}
+
+	// Get the position of the package keyword
+	packagePos := file.Package
+
+	// Find the position of the next semicolon
+	semicolonPos := token.Pos(0)
+	for _, imp := range file.Imports {
+		if semicolonPos == token.Pos(0) || imp.End() > semicolonPos {
+			semicolonPos = imp.End()
+		}
+	}
+	for _, decl := range file.Decls {
+		if pos := decl.Pos(); pos > packagePos && (semicolonPos == token.Pos(0) || pos < semicolonPos) {
+			semicolonPos = pos
+		}
+	}
+
+	// Return the position after the semicolon
+	return semicolonPos + 1
+}

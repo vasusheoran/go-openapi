@@ -4,10 +4,9 @@ package errors
 type ErrorResponse struct {
 	// This is a sample field comment
 	// openapi:description Error message
-	// openapi:example "404 not found"
-	// openapi:deprecated true
-	// openapi:nullable true
+	// openapi:nullable
 	// openapi:format text
 	// openapi:default "404 not found"
+	// openapi:example "404 not found"
 	Msg string `json:"msg"`
 }

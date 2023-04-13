@@ -90,11 +90,6 @@ func getParametersFromMethodComments(pc []*parameterComments) openapi3.Parameter
 
 // getRequestBodyFromMethodComments extracts information about the request type from the interface method comments.
 func getRequestBodyFromMethodComments(mc *methodComments) *openapi3.RequestBodyRef {
-	//if mc.
-	if len(mc.Parameters) == 0 {
-		return nil
-	}
-
 	if len(mc.Body) == 0 {
 		return nil
 	}
