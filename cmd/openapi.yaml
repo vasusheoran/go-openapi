@@ -3,41 +3,40 @@ components:
     schemas:
         Category:
             type: object
+            description: Type of the pet
+            xml:
+                name: category
             properties:
                 id:
                     type: number
-                    format: text
+                    format: int
                     description: Pet ID
                     default: "1"
                     example: "1"
                 name:
                     type: string
-                    format: text
                     description: Category name for the pets
                     enum:
-                        - cat
-                        - dog
+                        - cat dog
                     default: cat
                     example: dog
         CreatePetRequest:
             type: object
+            xml:
+                name: pet-request
             properties:
                 category:
                     $ref: '#/components/schemas/Category'
                 id:
                     type: number
-                    format: text
+                    format: int
                     description: Pet ID
                     default: "1"
                     example: "1"
-                name:
-                    type: string
-                    format: text
-                    description: Name of the pet
-                    default: tommy
-                    example: rambo
         CreatePetResponse:
             type: object
+            xml:
+                name: create-pet
             properties:
                 id:
                     type: string
@@ -45,39 +44,10 @@ components:
                     description: Returns ID for the per
                     default: 12-sdf-1-321
                     example: 12-sdf-1-321
-        ErrorResponse:
-            type: object
-            properties:
-                msg:
-                    type: string
-                    format: text
-                    description: Error message
-                    default: 404 not found
-                    example: 404 not found
-        GetPetByIDResponse:
-            type: object
-            properties:
-                category:
-                    $ref: '#/components/schemas/Category'
-                name:
-                    type: string
-                    format: text
-                    description: Name of the pet
-                    default: tommy
-                    example: rambo
-        GetPets:
-            type: object
-            properties:
-                pets:
-                    type: array
-                    format: array
-                    description: Returns list of pets
-                    items:
-                        $ref: '#/components/schemas/GetPetByIDResponse'
 info:
     title: Sample Spec - OpenAPI 3.1
     description: |4+
-        This is a sample Pet Store Server based on the OpenAPI 3.1 specification.  You can find out more about \nSwagger at [https://swagger.io](https://swagger.io). In the third iteration of the pet store, we've switched to the design first approach! \nYou can now help us improve the API whether it's by making changes to the definition itself or to the code. \nThat way, with time, we can improve the API in general, and expose some of the new features in OAS3.
+        This is a sample Pet Store server based on the OpenAPI 3.1 specification.  You can find out more about \nSwagger at [https://swagger.io](https://swagger.io). In the third iteration of the pet store, we've switched to the design first approach! \nYou can now help us improve the API whether it's by making changes to the definition itself or to the code. \nThat way, with time, we can improve the API in general, and expose some of the new features in OAS3.
 
         Some useful links:
         - [The Pet Store repository](https://github.com/swagger-api/swagger-petstore)
@@ -86,84 +56,97 @@ info:
     version: 1.0.0
 paths:
     /pets:
-        get:
-            tags:
-                - pet
-            summary: Get all pets
-            description: Returns list of all pets
-            operationId: GetPetByIDOp
-            responses:
-                "200":
-                    description: ""
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/GetPets'
-                "400":
-                    description: ""
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ErrorResponse'
         post:
             tags:
-                - pet
+                - pets
             summary: Adds a new pet to the store
             description: Adds a new pet to the store
-            operationId: CreatePet
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/CreatePetRequest'
-            responses:
-                "200":
-                    description: ""
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/CreatePetResponse'
-                "400":
-                    description: ""
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ErrorResponse'
-    /pets/{petId}:
-        get:
-            tags:
-                - pet
-            summary: Find pet by ID
-            description: Returns a single pet
-            operationId: GetPetsOp
+            operationId: createPet
             parameters:
                 - name: name
                   in: query
-                  description: '"Name of pet that needs to be updated"'
+                  description: Name of pet that needs to be updated
                   schema:
                     type: string
                 - name: petId
                   in: path
-                  description: '"ID of pet that needs to be updated"'
+                  description: ID of pet that needs to be updated
                   required: true
                   schema:
                     type: string
                 - name: x-agent-id
                   in: header
-                  description: '"Agent ID for the request"'
+                  description: Agent ID for the request
                   required: true
                   schema:
                     type: string
+            requestBody:
+                description: Request body to create Pets
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            xml:
+                                name: pet-request
+                            properties:
+                                category:
+                                    $ref: '#/components/schemas/Category'
+                                id:
+                                    type: number
+                                    format: int
+                                    description: Pet ID
+                                    default: "1"
+                                    example: "1"
+                    application/xml:
+                        schema:
+                            type: object
+                            xml:
+                                name: pet-request
+                            properties:
+                                category:
+                                    $ref: '#/components/schemas/Category'
+                                id:
+                                    type: number
+                                    format: int
+                                    description: Pet ID
+                                    default: "1"
+                                    example: "1"
             responses:
-                "400":
-                    description: ""
+                "200":
+                    description: OK
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ErrorResponse'
+                                type: object
+                                xml:
+                                    name: create-pet
+                                properties:
+                                    id:
+                                        type: string
+                                        format: text
+                                        description: Returns ID for the per
+                                        default: 12-sdf-1-321
+                                        example: 12-sdf-1-321
+                        application/xml:
+                            schema:
+                                type: object
+                                xml:
+                                    name: create-pet
+                                properties:
+                                    id:
+                                        type: string
+                                        format: text
+                                        description: Returns ID for the per
+                                        default: 12-sdf-1-321
+                                        example: 12-sdf-1-321
+                "400":
+                    description: Error
+                    content:
+                        application/json: {}
+                        application/xml: {}
 servers:
     - url: localhost:8080
     - url: localhost:8081
 tags:
-    - name: pet
-      description: Everything about your Pets
+    - name: pets
+      description: Everything about your pets

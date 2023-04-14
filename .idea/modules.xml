@@ -3,8 +3,6 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/go-openapi.iml" filepath="$PROJECT_DIR$/.idea/go-openapi.iml" />
-      <module fileurl="file://$PROJECT_DIR$/../go-swagger/.idea/go-swagger.iml" filepath="$PROJECT_DIR$/../go-swagger/.idea/go-swagger.iml" />
-      <module fileurl="file://$PROJECT_DIR$/../kin-openapi/.idea/kin-openapi.iml" filepath="$PROJECT_DIR$/../kin-openapi/.idea/kin-openapi.iml" />
     </modules>
   </component>
 </project>

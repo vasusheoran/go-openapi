@@ -2,8 +2,8 @@ package scan
 
 import (
 	"fmt"
+	"log"
 	"os"
-	"strings"
 )
 
 type LogLevel int
@@ -17,46 +17,59 @@ const (
 )
 
 type Logger struct {
-	level LogLevel
+	level       LogLevel
+	debugLogger *log.Logger
+	infoLogger  *log.Logger
+	warnLogger  *log.Logger
+	errorLogger *log.Logger
+	fatalLogger *log.Logger
 }
 
-func NewLogger(levelStr string) *Logger {
-	return &Logger{level: GetLogLevel(levelStr)}
+func NewLogger(level LogLevel) *Logger {
+	return &Logger{
+		level:       level,
+		debugLogger: log.New(os.Stdout, "DEBUG: ", log.Ldate|log.Ltime|log.Lshortfile),
+		infoLogger:  log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile),
+		warnLogger:  log.New(os.Stdout, "WARN: ", log.Ldate|log.Ltime|log.Lshortfile),
+		errorLogger: log.New(os.Stderr, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile),
+		fatalLogger: log.New(os.Stderr, "FATAL: ", log.Ldate|log.Ltime|log.Lshortfile),
+	}
 }
 
-func (logger *Logger) Debug(message string, keys ...string) {
+func (logger *Logger) Debug(message string, keys ...interface{}) {
 	if logger.level <= LogLevelDebug {
-		logger.log(LogLevelDebug, message, keys...)
+		logger.debugLogger.Output(2, fmt.Sprintf(message, keys...))
 	}
 }
 
-func (logger *Logger) Info(message string, keys ...string) {
+func (logger *Logger) Info(message string, keys ...interface{}) {
 	if logger.level <= LogLevelInfo {
-		logger.log(LogLevelInfo, message, keys...)
+		logger.infoLogger.Output(2, fmt.Sprintf(message, keys...))
 	}
 }
 
-func (logger *Logger) Warn(message string, keys ...string) {
+func (logger *Logger) Warn(message string, keys ...interface{}) {
 	if logger.level <= LogLevelWarn {
-		logger.log(LogLevelWarn, message, keys...)
+		logger.warnLogger.Output(2, fmt.Sprintf(message, keys...))
 	}
 }
 
-func (logger *Logger) Error(message string, keys ...string) {
+func (logger *Logger) Error(message string, keys ...interface{}) {
 	if logger.level <= LogLevelError {
-		logger.log(LogLevelError, message, keys...)
+		logger.errorLogger.Output(2, fmt.Sprintf(message, keys...))
 	}
 }
 
-func (logger *Logger) Fatal(message string, keys ...string) {
-	logger.log(LogLevelFatal, message, keys...)
+func (logger *Logger) Fatal(message string, keys ...interface{}) {
+	logger.fatalLogger.Output(2, fmt.Sprintf(message, keys...))
 	os.Exit(1)
 }
 
-func (logger *Logger) log(level LogLevel, message string, keys ...string) {
+func (logger *Logger) log(level LogLevel, message string, keys ...interface{}) {
+	//msg := fmt.Sprintf(message, keys)
 	lvl := logger.levelToString(level)
 	msg := fmt.Sprintf("[%s] %s\n", lvl, message)
-	fmt.Printf(msg, keys)
+	fmt.Printf(msg, keys...)
 }
 
 func (logger *Logger) levelToString(level LogLevel) string {
@@ -75,20 +88,6 @@ func (logger *Logger) levelToString(level LogLevel) string {
 	return ""
 }
 
-func GetLogLevel(levelStr string) LogLevel {
-	level := LogLevelInfo
-	switch strings.ToLower(levelStr) {
-	case "debug":
-		level = LogLevelDebug
-	case "info":
-		level = LogLevelInfo
-	case "warn":
-		level = LogLevelWarn
-	case "error":
-		level = LogLevelError
-	case "fatal":
-		level = LogLevelFatal
-	}
-
-	return level
+func (logger *Logger) SetLogLevel(level LogLevel) {
+	logger.level = level
 }

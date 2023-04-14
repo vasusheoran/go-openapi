@@ -35,9 +35,7 @@ func main() {
 }
 
 func generateSpec(dir, level string) (*openapi3.T, error) {
-	parser := scan.NewParser()
-	parser.WithLogLevel(level)
-	return parser.GetSpec(dir)
+	return scan.NewParser().WithLogLevel(level).GetSpec(dir)
 }
 
 func writeSpec(spec *openapi3.T, output string) error {

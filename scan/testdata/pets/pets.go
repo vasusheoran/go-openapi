@@ -1,19 +1,13 @@
-// openapi:info title Swagger Petstore - OpenAPI 3.1
-// openapi:info description start
-//
-//	This is a sample Pet Store Server based on the OpenAPI 3.1 specification.  You can find out more about \nSwagger at [https://swagger.io](https://swagger.io). In the third iteration of the pet store, we've switched to the design first approach! \nYou can now help us improve the API whether it's by making changes to the definition itself or to the code. \nThat way, with time, we can improve the API in general, and expose some of the new features in OAS3.
-//
-//	Some useful links:
-//	- [The Pet Store repository](https://github.com/swagger-api/swagger-petstore)
-//	- [The source API definition for the Pet Store](https://github.com/swagger-api/swagger-petstore/blob/master/src/main/resources/openapi.yaml)
-//
-// openapi:info description end
-// openapi:info version 1.0.0
-// openapi:info oas 3.1.0
-// openapi:info server localhost:8080 localhost:8081
 package main
 
+import "encoding/json"
+
 // CreatePetResponse ...
+// openapi:schema
+// openapi:xml create-pet
+// TODO: handle oneOf
+// TODO: add support for go validator for enums and regex ?
+// TODO: handle root user for xml
 type CreatePetResponse struct {
 	// This is a sample field comment
 	// openapi:description Returns ID for the per
@@ -24,8 +18,6 @@ type CreatePetResponse struct {
 }
 
 // GetPetByIDResponse ...
-// TODO: handle oneOf
-// TODO: add support for go validator for enums and regex ?
 type GetPetByIDResponse struct {
 	// openapi:description Name of the pet
 	// openapi:example "rambo"
@@ -36,10 +28,11 @@ type GetPetByIDResponse struct {
 	// This is a sample field comment
 	// openapi:description Type of pet
 	// openapi:nullable true
-	// openapi:format text
-	Category Category `json:"category"`
+	// openapi:oneOf GetPets CreatePetRequest
+	Category json.RawMessage `json:"category"`
 }
 
+// GetPets ...
 type GetPets struct {
 	// openapi:description Returns list of pets
 	// openapi:format array
@@ -47,82 +40,97 @@ type GetPets struct {
 }
 
 // Category ...
+// openapi:schema
+// openapi:xml category
 type Category struct {
 	// openapi:description Pet ID
-	// openapi:example "1"
-	// openapi:format text
-	// openapi:default "1"
+	// openapi:example 1
+	// openapi:default 1
 	ID int `json:"id"`
 	// openapi:description Category name for the pets
-	// openapi:example "dog"
+	// openapi:example dog
 	// openapi:nullable true
-	// openapi:format text
-	// openapi:default "cat"
-	// openapi:enum "cat,dog"
+	// openapi:default cat
+	// openapi:enum cat dog
 	Name string `json:"name"`
 }
 
+// Dog ...
+type Dog struct {
+	// openapi:description Name of the pet
+	// openapi:example rambo
+	// openapi:default tommy
+	Name string `json:"name"`
+}
+
+// Cat ...
+type Cat struct {
+	// openapi:description Name of the pet
+	// openapi:example rambo
+	// openapi:default tommy
+	Name string `json:"name"`
+	// openapi:description Owner of the pet
+	// openapi:example person1
+	// openapi:default person1
+	Owner string `json:"owner"`
+}
+
 // CreatePetRequest ...
+// openapi:schema
+// openapi:xml pet-request
 type CreatePetRequest struct {
 	// openapi:description Pet ID
-	// openapi:example "1"
-	// openapi:format text
-	// openapi:default "1"
+	// openapi:example 1
+	// openapi:default 1
 	Id int `json:"id"`
-	// openapi:description Name of the pet
-	// openapi:example "rambo"
-	// openapi:format text
-	// openapi:default "tommy"
-	Name string `json:"name"`
 	// Note that fields do not require openapi annotations to be parsed, that is must for strcuts, interfaces and methods.
 	// All the nested objects will be parsed recursively
-	Category Category `json:"category"`
+	// This is a sample field comment
+	// openapi:description Type of the pet
+	// openapi:nullable true
+	// openapi:oneOf GetPets CreatePetRequest
+	Type Category `json:"category"`
 }
 
 // PetsInterface This is a sample interface comment
 // Interface are used to create tags. They must have `name` annotation associated with them.
-// openapi:name pet
-// openapi:description Everything about your Pets
-// openapi:external-docs http://github.com/vasusheoran @author:vasusheoran
-// TODO: Global Parameters
-// TODO: OperationID required for struct
-// TODO: If tags not present, then use the interface name by default
-// TODO: Set op to method name by default
 type PetsInterface interface {
 	// CreatePet Add a new pet to the store
+	// openapi:operation POST /pets createPet
 	// openapi:summary Adds a new pet to the store
 	// openapi:description Adds a new pet to the store
-	// openapi:tags pet
-	// openapi:id CreatePet
-	// openapi:path /pets
-	// openapi:method POST
-	// openapi:body CreatePetRequest
-	// openapi:success 200 CreatePetResponse
-	// openapi:failure 400 ErrorResponse
-	CreatePet() (*CreatePetResponse, error)
-	// GetPetByID This is a sample method 2 comment
-	// openapi:summary Find pet by ID
-	// openapi:description Returns a single pet
-	// openapi:tags pet
-	// openapi:id GetPetsOp
-	// openapi:path /pets/{petId}
-	// openapi:method GET
-	// openapi:param name query string false "Name of pet that needs to be updated"
-	// openapi:param petId path string true "ID of pet that needs to be updated"
-	// openapi:param x-agent-id header string true "Agent ID for the request"
-	// openapi:success 204
-	// openapi:failure 400 ErrorResponse
-	GetPetByID(petId string) (*GetPetByIDResponse, error)
-	// GetPets Returns list of pets
-	// openapi:summary Get all pets
-	// openapi:description Returns list of all pets
-	// openapi:tags pet
-	// openapi:id GetPetByIDOp
-	// openapi:path /pets
-	// openapi:method GET
-	// openapi:success 200 GetPets
-	// openapi:failure 400 ErrorResponse
+	// openapi:tag pets
+	// openapi:consumes application/json application/xml
+	// openapi:produces application/json application/xml
+	// openapi:param name query string false --- Name of pet that needs to be updated
+	// openapi:param petId path string true --- ID of pet that needs to be updated
+	// openapi:param x-agent-id header string true --- Agent ID for the request
+	// openapi:body CreatePetRequest --- Request body to create Pets
+	// openapi:response 200 CreatePetResponse --- Response for CreatePet API
+	// openapi:response 200 CreatePetResponse --- OK
+	// openapi:response 400 ErrorResponse --- Error
+	CreatePet(name string) (*CreatePetResponse, error)
+	GetPetByID(petId string) (GetPetByIDResponse, error)
 	GetPets() error
 }
 
+type StoreInterface interface {
+	CreateStore() error
+	GetStore(id string) error
+}
+
+// openapi:info title Swagger Petstore - OpenAPI 3.1
+// openapi:info description start
+//
+//	This is a sample Pet Store server based on the OpenAPI 3.1 specification.  You can find out more about \nSwagger at [https://swagger.io](https://swagger.io). In the third iteration of the pet store, we've switched to the design first approach! \nYou can now help us improve the API whether it's by making changes to the definition itself or to the code. \nThat way, with time, we can improve the API in general, and expose some of the new features in OAS3.
+//
+//	Some useful links:
+//	- [The Pet Store repository](https://github.com/swagger-api/swagger-petstore)
+//	- [The source API definition for the Pet Store](https://github.com/swagger-api/swagger-petstore/blob/master/src/main/resources/openapi.yaml)
+//
+// openapi:info description end
+// openapi:info version 1.0.0
+// openapi:info oas 3.1.0
+// openapi:info server localhost:8080 localhost:8081
+// openapi:tag pets [Everything about your pets]
 func main() {}

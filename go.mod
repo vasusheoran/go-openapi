@@ -5,7 +5,6 @@ go 1.19
 require (
 	github.com/getkin/kin-openapi v0.115.0
 	github.com/stretchr/testify v1.8.1
-	golang.org/x/tools v0.8.0
 	gopkg.in/yaml.v3 v3.0.1
 
 )
