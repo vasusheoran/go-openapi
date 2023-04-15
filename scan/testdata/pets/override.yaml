@@ -23,7 +23,9 @@ components:
       properties:
         category:
           properties:
-            details:
+            type:
+              type: object
+              description: Animal type
               oneOf:
                 - $ref: '#/components/schemas/Cat'
                 - $ref: '#/components/schemas/Dog'
