@@ -14,9 +14,9 @@ import (
 func main() {
 	var dir, output, level, f string
 	flag.StringVar(&dir, "dir", ".", "the directory containing the Go files to parse")
-	flag.StringVar(&level, "level", "info", "sets the logging level. default is info.")
+	flag.StringVar(&level, "level", "info", "sets the logging level. default is info")
 	flag.StringVar(&output, "output", "./openapi.yaml", "the file path where the OpenAPI specification file will be written, default is 'openapi.yaml'")
-	flag.StringVar(&f, "file", "./override.yaml", "the file path to override generated file, default is 'override.yaml'")
+	flag.StringVar(&f, "file", "", "the file path to override generated file")
 	flag.Parse()
 
 	if dir == "" {
@@ -41,19 +41,21 @@ func generateSpec(dir, level string) (*openapi3.T, error) {
 }
 
 func writeSpec(spec *openapi3.T, output string, f string) error {
-	data, err := ioutil.ReadFile(f)
-	if err != nil {
-		panic(err)
-	}
-	spec2, err := openapi3.NewLoader().LoadFromData(data)
-	if err != nil {
-		panic(err)
-	}
+	if len(f) > 0 {
+		data, err := ioutil.ReadFile(f)
+		if err != nil {
+			panic(err)
+		}
+		spec2, err := openapi3.NewLoader().LoadFromData(data)
+		if err != nil {
+			panic(err)
+		}
 
-	// merge person2 into person1
-	err = mergo.Merge(spec, *spec2)
-	if err != nil {
-		fmt.Println(err)
+		// merge person2 into person1
+		err = mergo.Merge(spec, *spec2)
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 
 	b, err := yaml.Marshal(spec)

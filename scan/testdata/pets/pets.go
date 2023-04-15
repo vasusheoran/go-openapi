@@ -28,7 +28,7 @@ type GetPetByIDResponse struct {
 	// This is a sample field comment
 	// openapi:description Type of pet
 	// openapi:nullable true
-	// openapi:oneOf GetPets CreatePetRequest
+	// openapi:oneOf Cat Dog
 	Category json.RawMessage `json:"category"`
 }
 
@@ -90,7 +90,7 @@ type CreatePetRequest struct {
 	// This is a sample field comment
 	// openapi:description Type of the pet
 	// openapi:nullable true
-	// openapi:oneOf GetPets CreatePetRequest
+	// openapi:oneOf Cat Dog
 	Type Category `json:"category"`
 }
 

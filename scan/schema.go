@@ -72,19 +72,31 @@ func (p *Parser) createOpenAPISchema(key string, ts *ast.TypeSpec) *openapi3.Sch
 			continue
 		}
 
+		schema.Type = getOpenAPIFieldType(ts.Type)
 		schema.Properties[jsonTag] = fieldSchemaRef
 
-		schema.Type = getOpenAPIFieldType(ts.Type)
+		if len(fc.OneOf) > 0 {
 
-		if structField, ok := field.Type.(*ast.StructType); ok {
+			oneOfSchema := openapi3.NewOneOfSchema()
+			p.logger.Debug("found openapi:oneOf")
+			for _, name := range fc.OneOf {
+				_, ok := p.structMap[name]
+				if !ok {
+					// Continue with a waring
+					p.logger.Warn("oneOf field %s not found", name)
+				}
+
+				oneOfSchema.OneOf = append(oneOfSchema.OneOf, openapi3.NewSchemaRef(fmt.Sprintf("#/components/schemas/%s", name), nil))
+			}
+			schema.Properties[jsonTag].Value = oneOfSchema
+			schema.Properties[jsonTag].Ref = ""
+		} else if structField, ok := field.Type.(*ast.StructType); ok {
 			nestedSchema := p.createOpenAPISchema(ts.Name.Name, &ast.TypeSpec{Name: &ast.Ident{Name: ""}, Type: structField})
 			if nestedSchema != nil {
-				schema.Properties[jsonTag].Value = nestedSchema
+				schema.Properties[jsonTag].Ref = fmt.Sprintf("#/components/schemas/%s", field.Names[0].Name)
+				//schema.Properties[jsonTag].Value = nestedSchema
 			}
 		}
-
-		// Update the type map with the schema for the field's type.
-		p.typeMap[ts.Name.Name] = ts
 	}
 
 	if len(sc.XML.Name) != 0 {
