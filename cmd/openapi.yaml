@@ -36,16 +36,16 @@ components:
             xml:
                 name: pet-request
             properties:
-                category:
-                    oneOf:
-                        - $ref: '#/components/schemas/Cat'
-                        - $ref: '#/components/schemas/Dog'
                 id:
                     type: number
                     format: int
                     description: Pet ID
                     default: "1"
                     example: "1"
+                type:
+                    oneOf:
+                        - $ref: '#/components/schemas/Cat'
+                        - $ref: '#/components/schemas/Dog'
         CreatePetResponse:
             xml:
                 name: create-pet
@@ -107,31 +107,31 @@ paths:
                             xml:
                                 name: pet-request
                             properties:
-                                category:
-                                    oneOf:
-                                        - $ref: '#/components/schemas/Cat'
-                                        - $ref: '#/components/schemas/Dog'
                                 id:
                                     type: number
                                     format: int
                                     description: Pet ID
                                     default: "1"
                                     example: "1"
+                                type:
+                                    oneOf:
+                                        - $ref: '#/components/schemas/Cat'
+                                        - $ref: '#/components/schemas/Dog'
                     application/xml:
                         schema:
                             xml:
                                 name: pet-request
                             properties:
-                                category:
-                                    oneOf:
-                                        - $ref: '#/components/schemas/Cat'
-                                        - $ref: '#/components/schemas/Dog'
                                 id:
                                     type: number
                                     format: int
                                     description: Pet ID
                                     default: "1"
                                     example: "1"
+                                type:
+                                    oneOf:
+                                        - $ref: '#/components/schemas/Cat'
+                                        - $ref: '#/components/schemas/Dog'
             responses:
                 "200":
                     description: OK

@@ -42,6 +42,7 @@ func generateSpec(dir, level string) (*openapi3.T, error) {
 
 func writeSpec(spec *openapi3.T, output string, f string) error {
 	if len(f) > 0 {
+		// TODO
 		data, err := ioutil.ReadFile(f)
 		if err != nil {
 			panic(err)
@@ -51,7 +52,6 @@ func writeSpec(spec *openapi3.T, output string, f string) error {
 			panic(err)
 		}
 
-		// merge person2 into person1
 		err = mergo.Merge(spec, *spec2)
 		if err != nil {
 			fmt.Println(err)

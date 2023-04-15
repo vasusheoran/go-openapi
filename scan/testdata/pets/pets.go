@@ -27,8 +27,7 @@ type GetPetByIDResponse struct {
 	Name string `json:"name"`
 	// This is a sample field comment
 	// openapi:description Type of pet
-	// openapi:nullable true
-	// openapi:oneOf Cat Dog
+	// openapi:nullable
 	Category json.RawMessage `json:"category"`
 }
 
@@ -49,7 +48,7 @@ type Category struct {
 	ID int `json:"id"`
 	// openapi:description Category name for the pets
 	// openapi:example dog
-	// openapi:nullable true
+	// openapi:nullable
 	// openapi:default cat
 	// openapi:enum cat dog
 	Name string `json:"name"`
@@ -89,9 +88,10 @@ type CreatePetRequest struct {
 	// All the nested objects will be parsed recursively
 	// This is a sample field comment
 	// openapi:description Type of the pet
-	// openapi:nullable true
+	// openapi:nullable
+	// Note that field type is ignored for the oneOf schemas and a references are injected as per openapi:oneOf
 	// openapi:oneOf Cat Dog
-	Type Category `json:"category"`
+	Type Category `json:"type"`
 }
 
 // PetsInterface This is a sample interface comment
