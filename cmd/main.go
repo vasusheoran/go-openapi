@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/imdario/mergo"
 	"github.com/vasusheoran/go-openapi/scan"
 	"gopkg.in/yaml.v3"
 	"io/ioutil"
@@ -11,10 +12,11 @@ import (
 )
 
 func main() {
-	var dir, output, level string
+	var dir, output, level, f string
 	flag.StringVar(&dir, "dir", ".", "the directory containing the Go files to parse")
 	flag.StringVar(&level, "level", "info", "sets the logging level. default is info.")
 	flag.StringVar(&output, "output", "./openapi.yaml", "the file path where the OpenAPI specification file will be written, default is 'openapi.yaml'")
+	flag.StringVar(&f, "file", "./override.yaml", "the file path to override generated file, default is 'override.yaml'")
 	flag.Parse()
 
 	if dir == "" {
@@ -26,7 +28,7 @@ func main() {
 		log.Fatalf("error: %s", err)
 	}
 
-	err = writeSpec(spec, output)
+	err = writeSpec(spec, output, f)
 	if err != nil {
 		log.Fatalf("error: %s", err)
 	}
@@ -38,11 +40,22 @@ func generateSpec(dir, level string) (*openapi3.T, error) {
 	return scan.NewParser().WithLogLevel(level).GetSpec(dir)
 }
 
-func writeSpec(spec *openapi3.T, output string) error {
-	//b, err := spec.MarshalJSON()
-	//if err != nil {
-	//	return fmt.Errorf("failed to marshal spec: %s", err.Error())
-	//}
+func writeSpec(spec *openapi3.T, output string, f string) error {
+	data, err := ioutil.ReadFile(f)
+	if err != nil {
+		panic(err)
+	}
+	spec2, err := openapi3.NewLoader().LoadFromData(data)
+	if err != nil {
+		panic(err)
+	}
+
+	// merge person2 into person1
+	err = mergo.Merge(spec, *spec2)
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	b, err := yaml.Marshal(spec)
 	if err != nil {
 		return err

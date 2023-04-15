@@ -21,10 +21,13 @@ type Parser struct {
 	structComments map[string]*structComment
 	fieldComment   map[string]*fieldComment
 	typeMap        map[string]*ast.TypeSpec
-	structs        map[string]*ast.TypeSpec
-	schemaMap      map[string]*openapi3.Schema
-	operations     []*openAPIOperation
-	queue          map[string]*ast.TypeSpec
+	//structs        map[string]*ast.TypeSpec
+	schemaMap  map[string]*openapi3.Schema
+	operations []*openAPIOperation
+	queue      map[string]*ast.TypeSpec
+
+	fieldMap  map[string]*ast.Field
+	structMap map[string]*ast.StructType
 
 	//interfaces        map[string]*ast.TypeSpec
 }
@@ -54,8 +57,10 @@ func NewParser() *Parser {
 		typeMap:        make(map[string]*ast.TypeSpec),
 		schemaMap:      map[string]*openapi3.Schema{},
 		operations:     []*openAPIOperation{},
-		structs:        map[string]*ast.TypeSpec{},
 		queue:          map[string]*ast.TypeSpec{},
+		fieldMap:       map[string]*ast.Field{},
+		structMap:      map[string]*ast.StructType{},
+		//structs:        map[string]*ast.TypeSpec{},
 	}
 }
 
@@ -77,8 +82,8 @@ func (p *Parser) WithLogLevel(level string) *Parser {
 
 func (p *Parser) GetSpec(dir string) (*openapi3.T, error) {
 	err := p.parseDir(dir)
-	for _, spec := range p.structs {
-		p.createOpenAPISchema("", spec)
+	for _, ts := range p.typeMap {
+		p.createOpenAPISchema("", ts)
 	}
 	for _, op := range p.operations {
 		p.generateOperation(op)
@@ -129,12 +134,12 @@ func (p *Parser) ProcessFile(file *ast.File) error {
 				// Handle type declarations
 				for _, spec := range declType.Specs {
 					if ts, ok := spec.(*ast.TypeSpec); ok {
+						if _, ok := p.typeMap[ts.Name.Name]; ok {
+							return fmt.Errorf("duplicate struct `%s` are not supported", ts.Name.Name)
+						}
 
 						switch ts.Type.(type) {
 						case *ast.StructType:
-							if _, ok := p.structs[ts.Name.Name]; ok {
-								return fmt.Errorf("duplicate struct `%s` are not supported", ts.Name.Name)
-							}
 
 							t, ok := ts.Type.(*ast.StructType)
 							if !ok {
@@ -149,9 +154,11 @@ func (p *Parser) ProcessFile(file *ast.File) error {
 									continue
 								}
 								p.extractFieldComments(key, field.Doc)
+								p.fieldMap[field.Names[0].Name] = field
 							}
 
-							p.structs[ts.Name.Name] = ts
+							p.typeMap[ts.Name.Name] = ts
+							p.structMap[ts.Name.Name] = t
 						case *ast.InterfaceType:
 							iface, ok := ts.Type.(*ast.InterfaceType)
 							if !ok {

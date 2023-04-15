@@ -43,7 +43,7 @@ func (p *Parser) createOpenAPISchema(key string, ts *ast.TypeSpec) *openapi3.Sch
 
 	sc, ok := p.structComments[getKey("", ts.Name.Name, "")]
 	if !ok || sc == nil || !sc.Schema {
-		p.logger.Debug("openapi:schema not found for %s", ts.Name.NamePos)
+		p.logger.Warn("openapi:schema not found for %s", ts.Name.Name)
 		return nil
 	}
 
@@ -63,7 +63,7 @@ func (p *Parser) createOpenAPISchema(key string, ts *ast.TypeSpec) *openapi3.Sch
 		k := getKey("", ts.Name.Name, field.Names[0].Name)
 		fc, ok := p.fieldComment[k]
 		if !ok {
-			p.logger.Info("no openapi tags found for %s/%s", ts.Name.Name, field.Names[0].Name)
+			p.logger.Warn("no openapi tags found for %s/%s", ts.Name.Name, field.Names[0].Name)
 		}
 
 		fieldSchemaRef, jsonTag := p.createFieldSchema(ts.Name.Name, fc, field, required)
@@ -73,6 +73,8 @@ func (p *Parser) createOpenAPISchema(key string, ts *ast.TypeSpec) *openapi3.Sch
 		}
 
 		schema.Properties[jsonTag] = fieldSchemaRef
+
+		schema.Type = getOpenAPIFieldType(ts.Type)
 
 		if structField, ok := field.Type.(*ast.StructType); ok {
 			nestedSchema := p.createOpenAPISchema(ts.Name.Name, &ast.TypeSpec{Name: &ast.Ident{Name: ""}, Type: structField})

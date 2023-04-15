@@ -56,6 +56,7 @@ type Category struct {
 }
 
 // Dog ...
+// openapi:schema
 type Dog struct {
 	// openapi:description Name of the pet
 	// openapi:example rambo
@@ -64,6 +65,7 @@ type Dog struct {
 }
 
 // Cat ...
+// openapi:schema
 type Cat struct {
 	// openapi:description Name of the pet
 	// openapi:example rambo

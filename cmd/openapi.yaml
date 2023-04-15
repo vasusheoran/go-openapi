@@ -1,12 +1,28 @@
 openapi: 3.1.0
 components:
     schemas:
+        Cat:
+            properties:
+                name:
+                    type: string
+                    description: Name of the pet
+                    default: tommy
+                    example: rambo
+                owner:
+                    type: string
+                    description: Owner of the pet
+                    default: person1
+                    example: person1
         Category:
             type: object
             description: Type of the pet
             xml:
                 name: category
             properties:
+                details:
+                    oneOf:
+                        - $ref: '#/components/schemas/Cat'
+                        - $ref: '#/components/schemas/Dog'
                 id:
                     type: number
                     format: int
@@ -21,7 +37,6 @@ components:
                     default: cat
                     example: dog
         CreatePetRequest:
-            type: object
             xml:
                 name: pet-request
             properties:
@@ -34,7 +49,6 @@ components:
                     default: "1"
                     example: "1"
         CreatePetResponse:
-            type: object
             xml:
                 name: create-pet
             properties:
@@ -44,6 +58,13 @@ components:
                     description: Returns ID for the per
                     default: 12-sdf-1-321
                     example: 12-sdf-1-321
+        Dog:
+            properties:
+                name:
+                    type: string
+                    description: Name of the pet
+                    default: tommy
+                    example: rambo
 info:
     title: Sample Spec - OpenAPI 3.1
     description: |4+
@@ -85,7 +106,6 @@ paths:
                 content:
                     application/json:
                         schema:
-                            type: object
                             xml:
                                 name: pet-request
                             properties:
@@ -99,7 +119,6 @@ paths:
                                     example: "1"
                     application/xml:
                         schema:
-                            type: object
                             xml:
                                 name: pet-request
                             properties:
@@ -117,7 +136,6 @@ paths:
                     content:
                         application/json:
                             schema:
-                                type: object
                                 xml:
                                     name: create-pet
                                 properties:
@@ -129,7 +147,6 @@ paths:
                                         example: 12-sdf-1-321
                         application/xml:
                             schema:
-                                type: object
                                 xml:
                                     name: create-pet
                                 properties:
