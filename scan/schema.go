@@ -33,7 +33,7 @@ func (p *Parser) createOpenAPISchema(key string, ts *ast.TypeSpec) *openapi3.Sch
 		return sc
 	}
 
-	p.logger.Info("creating schema for %s", ts.Name.Name)
+	p.logger.Debug("creating schema for %s", ts.Name.Name)
 
 	structType := ts.Type.(*ast.StructType)
 	if structType.Fields == nil || len(structType.Fields.List) == 0 {
@@ -43,7 +43,7 @@ func (p *Parser) createOpenAPISchema(key string, ts *ast.TypeSpec) *openapi3.Sch
 
 	sc, ok := p.structComments[getKey("", ts.Name.Name, "")]
 	if !ok || sc == nil || !sc.Schema {
-		p.logger.Warn("openapi:schema not found for %s", ts.Name.Name)
+		p.logger.Debug("openapi:schema not found for %s", ts.Name.Name)
 		return nil
 	}
 

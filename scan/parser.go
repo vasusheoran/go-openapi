@@ -34,9 +34,9 @@ type Parser struct {
 }
 
 // NewParser creates a new instance of the Parser struct.
-func NewParser() *Parser {
+func NewParser(logger *Logger) *Parser {
 	return &Parser{
-		logger:  NewLogger(LogLevelInfo),
+		logger:  logger,
 		fileSet: token.NewFileSet(),
 		spec: &openapi3.T{
 			OpenAPI: "3.0.0",
@@ -70,22 +70,6 @@ func (p *Parser) WithMetaPath(path string) *Parser {
 	return p
 }
 
-func (p *Parser) WithLogLevel(level string) *Parser {
-	switch strings.ToLower(level) {
-	case "debug":
-		p.logger.SetLogLevel(LogLevelDebug)
-	case "info":
-		p.logger.SetLogLevel(LogLevelInfo)
-	case "warn":
-		p.logger.SetLogLevel(LogLevelWarn)
-	case "error":
-		p.logger.SetLogLevel(LogLevelError)
-	case "fatal":
-		p.logger.SetLogLevel(LogLevelFatal)
-	}
-	return p
-}
-
 func (p *Parser) GetSpec(dir string) (*openapi3.T, error) {
 	err := p.parseDir(dir)
 	for _, ts := range p.typeMap {
@@ -109,6 +93,7 @@ func (p *Parser) parseDir(dir string) error {
 
 		if info.IsDir() {
 			// Skip directories
+			p.logger.Info("Processing directory: %s\n", filePath)
 			return nil
 		}
 
@@ -128,9 +113,15 @@ func (p *Parser) parseDir(dir string) error {
 		// Iterate through the comments in the file
 		for _, comment := range file.Comments {
 			if comment.Pos() < file.Package {
-				if len(p.meta) > 0 && p.meta == filePath[len(dir)+1:] {
+				switch len(p.meta) {
+				case 0:
 					p.extractOpenAPIInfo(comment)
 					break
+				default:
+					if p.meta == filePath[len(dir)+1:] {
+						p.extractOpenAPIInfo(comment)
+						break
+					}
 				}
 			}
 		}
@@ -141,7 +132,7 @@ func (p *Parser) parseDir(dir string) error {
 }
 
 func (p *Parser) ProcessFile(path string, file *ast.File) error {
-	p.logger.Info("processing package: %s", file.Name.Name)
+	p.logger.Debug("processing definitions in file: %s", path)
 	// Store the package name
 	p.packageName = file.Name.Name
 
@@ -188,7 +179,7 @@ func (p *Parser) ProcessFile(path string, file *ast.File) error {
 							for _, field := range iface.Methods.List {
 								key := filepath.Join(ts.Name.Name, field.Names[0].Name)
 								if field.Doc == nil {
-									p.logger.Info("openapi annotations not found for %s", key)
+									p.logger.Debug("openapi annotations not found for %s", key)
 									continue
 								}
 								openAPIOp, err := extractOpenAPIOperation(key, field.Doc)
