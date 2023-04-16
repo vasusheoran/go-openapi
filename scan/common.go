@@ -60,7 +60,7 @@ func (p *Parser) extractOpenAPIInfo(cg *ast.CommentGroup) {
 				parts := strings.Split(strings.TrimSpace(strings.TrimPrefix(text, "// openapi:meta tag ")), "---")
 				tag := &openapi3.Tag{
 					Name:        strings.TrimSpace(parts[0]),
-					Description: parts[1],
+					Description: strings.TrimSpace(parts[1]),
 				}
 				p.spec.Tags = append(p.spec.Tags, tag)
 			case "server":
@@ -74,6 +74,14 @@ func (p *Parser) extractOpenAPIInfo(cg *ast.CommentGroup) {
 					}
 					p.spec.Servers = append(p.spec.Servers, s)
 				}
+			case "contact":
+				parts := strings.Split(strings.TrimSpace(strings.TrimPrefix(text, "// openapi:meta contact ")), " ")
+				contact := &openapi3.Contact{
+					URL:  parts[0],
+					Name: strings.Join(parts[2:], " "),
+				}
+				p.spec.Info.Contact = contact
+
 			}
 		}
 	}

@@ -11,7 +11,8 @@
 // openapi:meta info version 1.0.0
 // openapi:meta info oas 3.1.0
 // openapi:meta server https://localhost:8080 https://localhost:8081
-// openapi:meta tags pets --- Everything about your pets
+// openapi:meta tag Pets Management  --- Everything about your pets
+// openapi:meta contact https://mysupport.github.com GitHub Support
 
 package main
 

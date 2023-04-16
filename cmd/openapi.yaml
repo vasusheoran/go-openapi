@@ -72,6 +72,9 @@ info:
         - [The Pet Store repository](https://github.com/swagger-api/swagger-petstore)
         - [The source API definition for the Pet Store](https://github.com/swagger-api/swagger-petstore/blob/master/src/main/resources/openapi.yaml)
 
+    contact:
+        name: Support
+        url: https://mysupport.github.com
     version: 1.0.0
 paths:
     /pets:
@@ -166,3 +169,6 @@ paths:
 servers:
     - url: https://localhost:8080
     - url: https://localhost:8081
+tags:
+    - name: Pets Management
+      description: Everything about your pets

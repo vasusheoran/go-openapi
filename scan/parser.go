@@ -1,7 +1,6 @@
 package scan
 
 import (
-	"fmt"
 	"github.com/getkin/kin-openapi/openapi3"
 	"go/ast"
 	"go/parser"
@@ -146,7 +145,8 @@ func (p *Parser) ProcessFile(path string, file *ast.File) error {
 				for _, spec := range declType.Specs {
 					if ts, ok := spec.(*ast.TypeSpec); ok {
 						if _, ok := p.typeMap[ts.Name.Name]; ok {
-							return fmt.Errorf("duplicate struct `%s` are not supported", ts.Name.Name)
+							p.logger.Warn("duplicate struct `%s` are not supported", ts.Name.Name)
+							continue
 						}
 
 						switch ts.Type.(type) {
@@ -159,9 +159,13 @@ func (p *Parser) ProcessFile(path string, file *ast.File) error {
 							p.extractStructComments(ts.Name.Name, declType.Doc)
 
 							for _, field := range t.Fields.List {
+								if field == nil || field.Names == nil && len(field.Names) == 0 {
+									p.logger.Debug("fields not found for %s", ts.Name.Name)
+									continue
+								}
 								key := filepath.Join(ts.Name.Name, field.Names[0].Name)
 								if field.Doc == nil {
-									p.logger.Warn("openapi annotations not found for %s", key)
+									p.logger.Debug("openapi annotations not found for %s", key)
 									continue
 								}
 								p.extractFieldComments(key, field.Doc)
@@ -177,6 +181,10 @@ func (p *Parser) ProcessFile(path string, file *ast.File) error {
 							}
 
 							for _, field := range iface.Methods.List {
+								if field == nil || field.Names == nil && len(field.Names) == 0 {
+									p.logger.Debug("fields not found for %s", ts.Name.Name)
+									continue
+								}
 								key := filepath.Join(ts.Name.Name, field.Names[0].Name)
 								if field.Doc == nil {
 									p.logger.Debug("openapi annotations not found for %s", key)

@@ -85,7 +85,7 @@ func generateSpec() (*openapi3.T, error) {
 
 func mergeSpec(spec *openapi3.T) (*openapi3.T, error) {
 	if len(values) == 0 {
-		return nil, nil
+		return spec, nil
 	}
 
 	logger.Info("Merging OpenAPI specification files %s with generated specs into %s...", values, output)
