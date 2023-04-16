@@ -12,7 +12,7 @@ components:
           description: Owner of the pet
           default: person1
           example: person1
-    Dog:
+    Horse:
       properties:
         name:
           type: string
@@ -28,7 +28,7 @@ components:
               description: Animal type
               oneOf:
                 - $ref: '#/components/schemas/Cat'
-                - $ref: '#/components/schemas/Dog'
+                - $ref: '#/components/schemas/Horse'
   /pets:
     post:
       requestBody:

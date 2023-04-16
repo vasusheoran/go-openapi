@@ -1,3 +1,18 @@
+// openapi:meta info title Swagger Petstore - OpenAPI 3.1
+// openapi:meta info description start
+//
+//	This is a sample Pet Store server based on the OpenAPI 3.1 specification.  You can find out more about \nSwagger at [https://swagger.io](https://swagger.io). In the third iteration of the pet store, we've switched to the design first approach! \nYou can now help us improve the API whether it's by making changes to the definition itself or to the code. \nThat way, with time, we can improve the API in general, and expose some of the new features in OAS3.
+//
+//	Some useful links:
+//	- [The Pet Store repository](https://github.com/swagger-api/swagger-petstore)
+//	- [The source API definition for the Pet Store](https://github.com/swagger-api/swagger-petstore/blob/master/src/main/resources/openapi.yaml)
+//
+// openapi:meta info description end
+// openapi:meta info version 1.0.0
+// openapi:meta info oas 3.1.0
+// openapi:meta server https://localhost:8080 https://localhost:8081
+// openapi:meta tags pets --- Everything about your pets
+
 package main
 
 import "encoding/json"
@@ -121,18 +136,4 @@ type StoreInterface interface {
 	GetStore(id string) error
 }
 
-// openapi:info title Swagger Petstore - OpenAPI 3.1
-// openapi:info description start
-//
-//	This is a sample Pet Store server based on the OpenAPI 3.1 specification.  You can find out more about \nSwagger at [https://swagger.io](https://swagger.io). In the third iteration of the pet store, we've switched to the design first approach! \nYou can now help us improve the API whether it's by making changes to the definition itself or to the code. \nThat way, with time, we can improve the API in general, and expose some of the new features in OAS3.
-//
-//	Some useful links:
-//	- [The Pet Store repository](https://github.com/swagger-api/swagger-petstore)
-//	- [The source API definition for the Pet Store](https://github.com/swagger-api/swagger-petstore/blob/master/src/main/resources/openapi.yaml)
-//
-// openapi:info description end
-// openapi:info version 1.0.0
-// openapi:info oas 3.1.0
-// openapi:info server localhost:8080 localhost:8081
-// openapi:tag pets [Everything about your pets]
 func main() {}

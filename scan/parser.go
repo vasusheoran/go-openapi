@@ -28,6 +28,7 @@ type Parser struct {
 
 	fieldMap  map[string]*ast.Field
 	structMap map[string]*ast.StructType
+	meta      string
 
 	//interfaces        map[string]*ast.TypeSpec
 }
@@ -64,6 +65,11 @@ func NewParser() *Parser {
 	}
 }
 
+func (p *Parser) WithMetaPath(path string) *Parser {
+	p.meta = strings.TrimPrefix(path, "/")
+	return p
+}
+
 func (p *Parser) WithLogLevel(level string) *Parser {
 	switch strings.ToLower(level) {
 	case "debug":
@@ -87,6 +93,10 @@ func (p *Parser) GetSpec(dir string) (*openapi3.T, error) {
 	}
 	for _, op := range p.operations {
 		p.generateOperation(op)
+	}
+
+	if len(p.meta) > 1 {
+
 	}
 	return p.spec, err
 }
@@ -115,12 +125,22 @@ func (p *Parser) parseDir(dir string) error {
 
 		p.file = file
 
+		// Iterate through the comments in the file
+		for _, comment := range file.Comments {
+			if comment.Pos() < file.Package {
+				if len(p.meta) > 0 && p.meta == filePath[len(dir)+1:] {
+					p.extractOpenAPIInfo(comment)
+					break
+				}
+			}
+		}
+
 		// Process the file
-		return p.ProcessFile(file)
+		return p.ProcessFile(filePath[len(dir)+1:], file)
 	})
 }
 
-func (p *Parser) ProcessFile(file *ast.File) error {
+func (p *Parser) ProcessFile(path string, file *ast.File) error {
 	p.logger.Info("processing package: %s", file.Name.Name)
 	// Store the package name
 	p.packageName = file.Name.Name
@@ -189,14 +209,9 @@ func (p *Parser) ProcessFile(file *ast.File) error {
 				continue
 			}
 
-			if fn.Name.Name == "main" {
-				p.extractOpenAPIInfo(fn.Doc)
-				continue
-			}
-
 			openAPIOp, err := extractOpenAPIOperation(fn.Name.Name, fn.Doc)
 			if err != nil {
-				p.logger.Fatal(err.Error())
+				continue
 			}
 			p.operations = append(p.operations, openAPIOp)
 		default:

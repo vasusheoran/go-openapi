@@ -13,6 +13,6 @@ func Test_main_merge(t *testing.T) {
 
 func Test_main_2(t *testing.T) {
 	//os.Args = []string{"cmd", "--inputDir", "../scan/testdata/pets2.go", "--output", "v2.yaml"}
-	os.Args = []string{"cmd", "--dir", "../scan/testdata/pets", "--level", "warn", "--output", "openapi.yaml"}
+	os.Args = []string{"cmd", "--dir", "../scan/testdata/pets", "--level", "warn", "--output", "openapi.yaml", "--meta", "pets.go"}
 	main()
 }

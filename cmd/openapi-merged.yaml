@@ -1,4 +1,4 @@
-openapi: 3.1.0
+openapi: 3.0.0
 components:
     schemas:
         Cat:
@@ -19,10 +19,6 @@ components:
             xml:
                 name: category
             properties:
-                details:
-                    oneOf:
-                        - $ref: '#/components/schemas/Cat'
-                        - $ref: '#/components/schemas/Dog'
                 id:
                     type: number
                     format: int
@@ -41,13 +37,23 @@ components:
                 name: pet-request
             properties:
                 category:
-                    $ref: '#/components/schemas/Category'
+                    properties:
+                        type:
+                            oneOf:
+                                - $ref: '#/components/schemas/Cat'
+                                - $ref: '#/components/schemas/Horse'
+                            type: object
+                            description: Animal type
                 id:
                     type: number
                     format: int
                     description: Pet ID
                     default: "1"
                     example: "1"
+                type:
+                    oneOf:
+                        - $ref: '#/components/schemas/Cat'
+                        - $ref: '#/components/schemas/Dog'
         CreatePetResponse:
             xml:
                 name: create-pet
@@ -65,16 +71,17 @@ components:
                     description: Name of the pet
                     default: tommy
                     example: rambo
+        Horse:
+            properties:
+                name:
+                    type: string
+                    description: Name of the pet
+                    default: tommy
+                    example: rambo
 info:
     title: Sample Spec - OpenAPI 3.1
-    description: |4+
-        This is a sample Pet Store server based on the OpenAPI 3.1 specification.  You can find out more about \nSwagger at [https://swagger.io](https://swagger.io). In the third iteration of the pet store, we've switched to the design first approach! \nYou can now help us improve the API whether it's by making changes to the definition itself or to the code. \nThat way, with time, we can improve the API in general, and expose some of the new features in OAS3.
-
-        Some useful links:
-        - [The Pet Store repository](https://github.com/swagger-api/swagger-petstore)
-        - [The source API definition for the Pet Store](https://github.com/swagger-api/swagger-petstore/blob/master/src/main/resources/openapi.yaml)
-
-    version: 1.0.0
+    description: Sample description.
+    version: 3.1.0
 paths:
     /pets:
         post:
@@ -110,26 +117,46 @@ paths:
                                 name: pet-request
                             properties:
                                 category:
-                                    $ref: '#/components/schemas/Category'
+                                    properties:
+                                        type:
+                                            oneOf:
+                                                - $ref: '#/components/schemas/Cat'
+                                                - $ref: '#/components/schemas/Horse'
+                                            type: object
+                                            description: Animal type
                                 id:
                                     type: number
                                     format: int
                                     description: Pet ID
                                     default: "1"
                                     example: "1"
+                                type:
+                                    oneOf:
+                                        - $ref: '#/components/schemas/Cat'
+                                        - $ref: '#/components/schemas/Dog'
                     application/xml:
                         schema:
                             xml:
                                 name: pet-request
                             properties:
                                 category:
-                                    $ref: '#/components/schemas/Category'
+                                    properties:
+                                        type:
+                                            oneOf:
+                                                - $ref: '#/components/schemas/Cat'
+                                                - $ref: '#/components/schemas/Horse'
+                                            type: object
+                                            description: Animal type
                                 id:
                                     type: number
                                     format: int
                                     description: Pet ID
                                     default: "1"
                                     example: "1"
+                                type:
+                                    oneOf:
+                                        - $ref: '#/components/schemas/Cat'
+                                        - $ref: '#/components/schemas/Dog'
             responses:
                 "200":
                     description: OK
@@ -162,8 +189,4 @@ paths:
                         application/json: {}
                         application/xml: {}
 servers:
-    - url: localhost:8080
-    - url: localhost:8081
-tags:
-    - name: pets
-      description: Everything about your pets
+    - url: http://localhost:8080

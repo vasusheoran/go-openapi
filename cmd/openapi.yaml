@@ -164,8 +164,5 @@ paths:
                         application/json: {}
                         application/xml: {}
 servers:
-    - url: localhost:8080
-    - url: localhost:8081
-tags:
-    - name: pets
-      description: Everything about your pets
+    - url: https://localhost:8080
+    - url: https://localhost:8081

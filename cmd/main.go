@@ -12,18 +12,19 @@ import (
 )
 
 func main() {
-	var dir, output, level, f string
+	var dir, output, level, f, meta string
 	flag.StringVar(&dir, "dir", ".", "the directory containing the Go files to parse")
-	flag.StringVar(&level, "level", "info", "sets the logging level. default is info")
+	flag.StringVar(&level, "level", "meta", "sets the logging level. default is meta")
 	flag.StringVar(&output, "output", "./openapi.yaml", "the file path where the OpenAPI specification file will be written, default is 'openapi.yaml'")
 	flag.StringVar(&f, "file", "", "the file path to override generated file")
+	flag.StringVar(&meta, "meta", "", "the file path that OpenAPI meta relative to the dir")
 	flag.Parse()
 
 	if dir == "" {
 		dir = "openapi.yaml"
 	}
 
-	spec, err := generateSpec(dir, level)
+	spec, err := generateSpec(dir, level, meta)
 	if err != nil {
 		log.Fatalf("error: %s", err)
 	}
@@ -36,8 +37,8 @@ func main() {
 	fmt.Println("OpenAPI specification generated successfully!")
 }
 
-func generateSpec(dir, level string) (*openapi3.T, error) {
-	return scan.NewParser().WithLogLevel(level).GetSpec(dir)
+func generateSpec(dir, level, meta string) (*openapi3.T, error) {
+	return scan.NewParser().WithLogLevel(level).WithMetaPath(meta).GetSpec(dir)
 }
 
 func writeSpec(spec *openapi3.T, output string, f string) error {
