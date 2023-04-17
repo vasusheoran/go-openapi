@@ -11,6 +11,7 @@ func Test_merge(t *testing.T) {
 }
 
 func Test_parser(t *testing.T) {
-	os.Args = []string{"cmd", "--dir", "../scan/testdata/pets", "--output", "openapi.yaml", "--meta", "pets.go"}
+	//os.Args = []string{"cmd", "--dir", "../scan/testdata/pets", "--output", "openapi.yaml", "--meta", "pets.go", "--level", "debug"}
+	os.Args = []string{"cmd", "--dir", "../scan/testdata/pets1", "--output", "openapi.yaml", "--level", "debug"}
 	main()
 }

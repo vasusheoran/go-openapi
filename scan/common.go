@@ -28,7 +28,7 @@ func (p *Parser) extractOpenAPIInfo(cg *ast.CommentGroup) {
 			case "info":
 				switch fields[1] {
 				case "title": // join " " and trim \"
-					p.spec.Info.Description = strings.Trim(strings.TrimPrefix(cg.List[i].Text, "// openapi:meta title "), "\"")
+					p.spec.Info.Title = strings.Trim(strings.TrimPrefix(cg.List[i].Text, "// openapi:meta info title "), "\"")
 				case "description":
 					start := i + 1
 					if fields[2] == "start" {
@@ -49,7 +49,7 @@ func (p *Parser) extractOpenAPIInfo(cg *ast.CommentGroup) {
 						}
 						p.spec.Info.Description = sb.String()
 					} else {
-						p.spec.Info.Description = strings.Trim(strings.TrimPrefix(cg.List[i].Text, "// openapi:meta description "), "\"")
+						p.spec.Info.Description = strings.Trim(strings.TrimPrefix(cg.List[i].Text, "// openapi:meta info description "), "\"")
 					}
 				case "version":
 					p.spec.Info.Version = strings.Trim(fields[2], "\"")

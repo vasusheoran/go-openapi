@@ -69,17 +69,16 @@ func (p *Parser) WithMetaPath(path string) *Parser {
 	return p
 }
 
-func (p *Parser) GetSpec(dir string) (*openapi3.T, error) {
-	err := p.parseDir(dir)
-	for _, ts := range p.typeMap {
-		p.createOpenAPISchema("", ts)
-	}
-	for _, op := range p.operations {
-		p.generateOperation(op)
-	}
-
-	if len(p.meta) > 1 {
-
+func (p *Parser) GetSpec(dirs []string) (*openapi3.T, error) {
+	var err error
+	for _, dir := range dirs {
+		err = p.parseDir(dir)
+		for key, ts := range p.typeMap {
+			p.createOpenAPISchema(key, ts)
+		}
+		for _, op := range p.operations {
+			p.generateOperation(op)
+		}
 	}
 	return p.spec, err
 }
@@ -92,7 +91,7 @@ func (p *Parser) parseDir(dir string) error {
 
 		if info.IsDir() {
 			// Skip directories
-			p.logger.Info("Processing directory: %s\n", filePath)
+			p.logger.Debug("Processing directory: %s\n", filePath)
 			return nil
 		}
 
@@ -141,39 +140,51 @@ func (p *Parser) ProcessFile(path string, file *ast.File) error {
 		case *ast.GenDecl:
 			switch declType.Tok {
 			case token.TYPE:
+
 				// Handle type declarations
 				for _, spec := range declType.Specs {
 					if ts, ok := spec.(*ast.TypeSpec); ok {
-						if _, ok := p.typeMap[ts.Name.Name]; ok {
-							p.logger.Warn("duplicate struct `%s` are not supported", ts.Name.Name)
-							continue
-						}
 
 						switch ts.Type.(type) {
+						case *ast.Ident:
+							key := p.extractStructComments(ts.Name.Name, declType.Doc)
+							if key == nil {
+								p.logger.Debug("invalid config for schema %s at %s", ts.Name.Name, path)
+								continue
+							}
+
+							schemaRef := p.ParseTypeExpr(*key, ts.Type)
+							p.schemaMap[*key] = schemaRef.Value
 						case *ast.StructType:
 
 							t, ok := ts.Type.(*ast.StructType)
 							if !ok {
 								break
 							}
-							p.extractStructComments(ts.Name.Name, declType.Doc)
+							key := p.extractStructComments(ts.Name.Name, declType.Doc)
+							if key == nil {
+								p.logger.Debug("invalid config for schema %s at %s", ts.Name.Name, path)
+								continue
+							}
 
 							for _, field := range t.Fields.List {
 								if field == nil || field.Names == nil && len(field.Names) == 0 {
 									p.logger.Debug("fields not found for %s", ts.Name.Name)
 									continue
 								}
-								key := filepath.Join(ts.Name.Name, field.Names[0].Name)
 								if field.Doc == nil {
 									p.logger.Debug("openapi annotations not found for %s", key)
 									continue
 								}
-								p.extractFieldComments(key, field.Doc)
-								p.fieldMap[field.Names[0].Name] = field
+								fieldName := p.extractFieldComments(*key, field.Names[0].Name, field.Doc)
+								if fieldName == nil {
+									p.logger.Fatal("no openapi:name found for %s/%s", ts.Name.Name, field.Names[0].Name)
+								}
+								p.fieldMap[*fieldName] = field
 							}
 
-							p.typeMap[ts.Name.Name] = ts
-							p.structMap[ts.Name.Name] = t
+							p.typeMap[*key] = ts
+							p.structMap[*key] = t
 						case *ast.InterfaceType:
 							iface, ok := ts.Type.(*ast.InterfaceType)
 							if !ok {
@@ -192,10 +203,12 @@ func (p *Parser) ProcessFile(path string, file *ast.File) error {
 								}
 								openAPIOp, err := extractOpenAPIOperation(key, field.Doc)
 								if err != nil {
-									p.logger.Fatal(err.Error())
+									p.logger.Debug(err.Error())
+									continue
 								}
 								p.operations = append(p.operations, openAPIOp)
 							}
+
 						}
 					}
 				}
@@ -210,6 +223,7 @@ func (p *Parser) ProcessFile(path string, file *ast.File) error {
 
 			openAPIOp, err := extractOpenAPIOperation(fn.Name.Name, fn.Doc)
 			if err != nil {
+				p.logger.Debug(err.Error())
 				continue
 			}
 			p.operations = append(p.operations, openAPIOp)

@@ -1,0 +1,41 @@
+components:
+  schemas:
+    Cat:
+      properties:
+        name:
+          type: string
+          description: Name of the pet
+          default: tommy
+          example: rambo
+        owner:
+          type: string
+          description: Owner of the pet
+          default: person1
+          example: person1
+    Horse:
+      properties:
+        name:
+          type: string
+          description: Name of the pet
+          default: tommy
+          example: rambo
+    CreatePetRequest:
+      properties:
+        category:
+          properties:
+            type:
+              type: object
+              description: Animal type
+              oneOf:
+                - $ref: '#/components/schemas/Cat'
+                - $ref: '#/components/schemas/Horse'
+  /pets:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePetRequest'
+          application/xml:
+            schema:
+              $ref: '#/components/schemas/CreatePetRequest'

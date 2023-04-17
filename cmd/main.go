@@ -12,13 +12,13 @@ import (
 	"strings"
 )
 
-type overrideSpecSlice []string
+type InputSlice []string
 
-func (s *overrideSpecSlice) String() string {
+func (s *InputSlice) String() string {
 	return fmt.Sprintf("%v", *s)
 }
 
-func (s *overrideSpecSlice) Set(value string) error {
+func (s *InputSlice) Set(value string) error {
 	valuesSlice := strings.Split(value, ",")
 
 	for _, v := range valuesSlice {
@@ -29,20 +29,16 @@ func (s *overrideSpecSlice) Set(value string) error {
 }
 
 var logger = scan.NewLogger(scan.LogLevelInfo)
-var dir, output, level, meta string
-var values overrideSpecSlice
+var output, level, meta string
+var values, dir InputSlice
 
 func main() {
-	flag.StringVar(&dir, "dir", ".", "the directory containing the Go files to parse")
+	flag.Var(&dir, "dir", "the directory list containing the Go files to parse")
 	flag.StringVar(&level, "level", "", "sets the logging level. default is `info`")
 	flag.StringVar(&output, "output", "./openapi.yaml", "the file path where the OpenAPI specification file will be written, default is 'openapi.yaml'")
 	flag.Var(&values, "values", "comma separated list of override spec files")
 	flag.StringVar(&meta, "meta", "", "the file path that OpenAPI meta relative to the dir")
 	flag.Parse()
-
-	if dir == "" {
-		dir = "openapi.yaml"
-	}
 
 	if len(level) != 0 {
 		switch strings.ToLower(level) {
@@ -80,7 +76,12 @@ func main() {
 }
 
 func generateSpec() (*openapi3.T, error) {
-	return scan.NewParser(logger).WithMetaPath(meta).GetSpec(dir)
+	var dirList []string
+	for _, d := range dir {
+		dirList = append(dirList, d)
+	}
+
+	return scan.NewParser(logger).WithMetaPath(meta).GetSpec(dirList)
 }
 
 func mergeSpec(spec *openapi3.T) (*openapi3.T, error) {

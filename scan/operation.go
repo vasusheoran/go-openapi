@@ -41,6 +41,9 @@ type Parameter struct {
 }
 
 func (p *Parser) generateOperation(op *openAPIOperation) {
+	if op == nil {
+		return
+	}
 	p.logger.Debug("processing %s", op.OperationID)
 
 	resp := &openapi3.Operation{}
@@ -117,6 +120,8 @@ func extractOpenAPIOperation(name string, cg *ast.CommentGroup) (*openAPIOperati
 		return nil, fmt.Errorf("comments not found: %s", name)
 	}
 
+	var isValidOperation bool
+
 	for _, comment := range cg.List {
 		text := strings.TrimSpace(strings.TrimLeft(comment.Text, "//"))
 
@@ -129,6 +134,7 @@ func extractOpenAPIOperation(name string, cg *ast.CommentGroup) (*openAPIOperati
 			op.Method = parts[0]
 			op.Path = parts[1]
 			op.OperationID = parts[2]
+			isValidOperation = true
 		} else if strings.HasPrefix(text, "openapi:summary") {
 			op.Summary = strings.TrimSpace(strings.TrimPrefix(text, "openapi:summary"))
 		} else if strings.HasPrefix(text, "openapi:description") {
@@ -186,6 +192,10 @@ func extractOpenAPIOperation(name string, cg *ast.CommentGroup) (*openAPIOperati
 			p.Required = parts[3]
 			op.Parameters = append(op.Parameters, p)
 		}
+	}
+
+	if !isValidOperation {
+		return nil, fmt.Errorf("%s does not contain openapi:operation shema", name)
 	}
 
 	return op, nil

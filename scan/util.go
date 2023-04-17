@@ -97,7 +97,7 @@ func getOpenAPIFieldType(expr ast.Expr) string {
 		switch t.Name {
 		case "bool":
 			return "boolean"
-		case "string":
+		case "string", "error":
 			return "string"
 		case "int", "int8", "int16", "int32", "uint", "uint8", "uint16", "uint32", "float32", "float64":
 			return "number"
@@ -114,32 +114,3 @@ func getOpenAPIFieldType(expr ast.Expr) string {
 		return ""
 	}
 }
-
-// TODO: Use to store field types
-//func fieldToTypeSpec(field *ast.Field) (*ast.TypeSpec, error) {
-//	ident, ok := field.Type.(*ast.Ident)
-//	if !ok {
-//		selectorExpr, ok := field.Type.(*ast.SelectorExpr)
-//		if !ok {
-//			return nil, fmt.Errorf("unsupported field type: %T", field.Type)
-//		}
-//		ident = selectorExpr.Sel
-//	}
-//
-//	spec, ok := ident.Obj.Decl.(*ast.TypeSpec)
-//	if !ok {
-//		return nil, fmt.Errorf("unable to convert field to TypeSpec")
-//	}
-//
-//	return spec, nil
-//}
-//
-//func typeToFieldSpec(name string, typ types.Type) *ast.Field {
-//	ident := ast.NewIdent(name)
-//	fieldType := ast.ParseExpr(types.TypeString(typ, nil))
-//
-//	return &ast.Field{
-//		Names: []*ast.Ident{ident},
-//		Type:  fieldType,
-//	}
-//}
