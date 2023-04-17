@@ -38,10 +38,10 @@ func NewParser(logger *Logger) *Parser {
 		logger:  logger,
 		fileSet: token.NewFileSet(),
 		spec: &openapi3.T{
-			OpenAPI: "3.0.0",
+			OpenAPI: "3.1.0",
 			Info: &openapi3.Info{
 				Title:       "Sample Spec - OpenAPI 3.1",
-				Version:     "3.1.0",
+				Version:     "v1",
 				Description: "Sample description.",
 			},
 			Servers: openapi3.Servers{

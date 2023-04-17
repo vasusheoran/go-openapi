@@ -117,7 +117,7 @@ type PetsInterface interface {
 	// openapi:operation POST /pets createPet
 	// openapi:summary Adds a new pet to the store
 	// openapi:description Adds a new pet to the store
-	// openapi:tag pets
+	// openapi:tag Pets Management
 	// openapi:consumes application/json application/xml
 	// openapi:produces application/json application/xml
 	// openapi:param name query string false --- Name of pet that needs to be updated

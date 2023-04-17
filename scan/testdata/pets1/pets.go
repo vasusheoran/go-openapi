@@ -1,5 +1,7 @@
 package main
 
+import "encoding/json"
+
 // Pet ...
 // openapi:schema pet
 type Pet struct {
@@ -44,6 +46,9 @@ type Category struct {
 	// openapi:default cat
 	// openapi:enum cat dog
 	Name string `json:"name"`
+	// openapi:name category
+	// openapi:oneOf Cat Dog
+	Category json.RawMessage `json:"category"`
 }
 
 // PetsInterface This is a sample interface comment
