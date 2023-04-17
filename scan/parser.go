@@ -152,7 +152,6 @@ func (p *Parser) ProcessFile(path string, file *ast.File) error {
 								p.logger.Debug("invalid config for schema %s at %s", ts.Name.Name, path)
 								continue
 							}
-
 							schemaRef := p.ParseTypeExpr(*key, ts.Type)
 							p.schemaMap[*key] = schemaRef.Value
 						case *ast.StructType:
@@ -176,6 +175,7 @@ func (p *Parser) ProcessFile(path string, file *ast.File) error {
 									p.logger.Debug("openapi annotations not found for %s", key)
 									continue
 								}
+								// TODO: Fields are extracted twice due to mapping, cache Struct/Field name with openapi:scheme/name
 								fieldName := p.extractFieldComments(*key, field.Names[0].Name, field.Doc)
 								if fieldName == nil {
 									p.logger.Fatal("no openapi:name found for %s/%s", ts.Name.Name, field.Names[0].Name)

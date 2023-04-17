@@ -106,7 +106,7 @@ func (p *Parser) generateOperation(op *openAPIOperation) {
 		return
 	}
 
-	p.spec.Paths[path] = pathItem
+	p.spec.AddOperation(path, op.Method, resp)
 }
 
 func extractOpenAPIOperation(name string, cg *ast.CommentGroup) (*openAPIOperation, error) {

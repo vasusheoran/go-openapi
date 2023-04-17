@@ -94,8 +94,6 @@ func (p *Parser) createOpenAPISchema(structNameInSchema string, ts *ast.TypeSpec
 			schema.Type = getOpenAPIFieldType(ts.Type)
 			schema.Properties[jsonTag] = fieldSchemaRef
 
-			structField, isStructField := field.Type.(*ast.StructType)
-
 			if fc != nil && len(fc.OneOf) > 0 {
 
 				oneOfSchema := openapi3.NewOneOfSchema()
@@ -111,7 +109,7 @@ func (p *Parser) createOpenAPISchema(structNameInSchema string, ts *ast.TypeSpec
 				}
 				schema.Properties[jsonTag].Value = oneOfSchema
 				schema.Properties[jsonTag].Ref = ""
-			} else if isStructField {
+			} else if structField, isStructField := field.Type.(*ast.StructType); isStructField {
 				nestedSchema := p.createOpenAPISchema(structNameInSchema, &ast.TypeSpec{Name: &ast.Ident{Name: ""}, Type: structField})
 				if nestedSchema != nil {
 					schema.Properties[jsonTag].Ref = fmt.Sprintf("#/components/schemas/%s", field.Names[0].Name)
@@ -153,7 +151,7 @@ func (p *Parser) createFieldSchema(name string, fc *fieldComment, field *ast.Fie
 	fieldSchemaRef := p.ParseTypeExpr(fc.Name, field.Type)
 	if fieldSchemaRef == nil {
 		// If the field type cannot be parsed, skip it.
-		return nil, ""
+		return openapi3.NewSchemaRef("", openapi3.NewSchema()), jsonTag
 	}
 
 	// If the field is required, add it to the list of required fields.
