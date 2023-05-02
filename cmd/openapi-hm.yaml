@@ -1,0 +1,399 @@
+openapi: 3.1.0
+components:
+    schemas:
+        Error:
+            properties:
+                code:
+                    type: string
+                message:
+                    type: string
+                resolution:
+                    type: string
+        ErrorResponse:
+            properties:
+                error:
+                    properties:
+                        code:
+                            type: string
+                        message:
+                            type: string
+                        resolution:
+                            type: string
+        GetHostsResponse:
+            properties:
+                num_records:
+                    type: number
+                    format: int
+                records:
+                    properties:
+                        addr:
+                            type: string
+                        connector_id:
+                            type: string
+                        id:
+                            type: string
+                        os_type:
+                            type: string
+                        platform:
+                            type: string
+                        plugin_port:
+                            type: number
+                            format: uint
+                        plugins:
+                            properties:
+                                type:
+                                    type: string
+                        status:
+                            properties:
+                                type:
+                                    type: string
+                        username:
+                            type: string
+                total_records:
+                    type: number
+                    format: int
+        GetSSHFingerprintRequest:
+            properties:
+                addr:
+                    type: string
+                connector_id:
+                    type: string
+                port:
+                    type: number
+                    format: uint
+                private_key:
+                    type: string
+                username:
+                    type: string
+        GetSSHFingerprintResponse:
+            properties:
+                err:
+                    properties:
+                        code:
+                            type: string
+                        message:
+                            type: string
+                        resolution:
+                            type: string
+                fingerprint:
+                    type: string
+                key_type:
+                    type: string
+        Host:
+            properties:
+                addr:
+                    type: string
+                connector_id:
+                    type: string
+                id:
+                    type: string
+                os_type:
+                    type: string
+                platform:
+                    type: string
+                plugin_port:
+                    type: number
+                    format: uint
+                plugins:
+                    properties:
+                        type:
+                            type: string
+                status:
+                    properties:
+                        type:
+                            type: string
+                username:
+                    type: string
+        JobLink:
+            properties:
+                _links:
+                    properties:
+                        self:
+                            properties:
+                                href:
+                                    type: string
+                uuid:
+                    type: string
+        JobResponse:
+            properties:
+                job:
+                    $ref: '#/components/schemas/JobLink'
+        Links:
+            properties:
+                self:
+                    properties:
+                        href:
+                            type: string
+        ManualInstallParams:
+            properties:
+                username:
+                    type: string
+        Plugin:
+            properties:
+                type:
+                    type: string
+        PluginInstallRequest:
+            properties:
+                addr:
+                    type: string
+                connector_id:
+                    type: string
+                host_id:
+                    type: string
+                install_method:
+                    type: string
+                install_params:
+                    oneOf:
+                        - $ref: '#/components/schemas/SSHInstallParams'
+                        - $ref: '#/components/schemas/ManualInstallParams'
+                plugin_port:
+                    type: number
+                    format: uint
+                plugin_type:
+                    type: string
+        Reference:
+            properties:
+                href:
+                    type: string
+        SSHInstallParams:
+            properties:
+                fingerprint:
+                    type: string
+                key_type:
+                    type: string
+                private_key:
+                    type: string
+                ssh_port:
+                    type: number
+                    format: uint
+                username:
+                    type: string
+info:
+    title: Application protection REST API
+    description: |
+        Application protection manages data protection of applications.
+    contact:
+        name: Support
+        url: https://mysupport.netapp.com
+    version: v1
+paths:
+    /{version}/hosts:
+        get:
+            tags:
+                - Host Management
+            summary: Get Hosts
+            description: Get Hosts
+            operationId: getHosts
+            parameters:
+                - name: version
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: x-account-id
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json: {}
+            responses:
+                "200":
+                    description: The response parameters for running GetHosts operation
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    num_records:
+                                        type: number
+                                        format: int
+                                    records:
+                                        properties:
+                                            addr:
+                                                type: string
+                                            connector_id:
+                                                type: string
+                                            id:
+                                                type: string
+                                            os_type:
+                                                type: string
+                                            platform:
+                                                type: string
+                                            plugin_port:
+                                                type: number
+                                                format: uint
+                                            plugins:
+                                                properties:
+                                                    type:
+                                                        type: string
+                                            status:
+                                                properties:
+                                                    type:
+                                                        type: string
+                                            username:
+                                                type: string
+                                    total_records:
+                                        type: number
+                                        format: int
+                "400":
+                    description: ""
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    error:
+                                        properties:
+                                            code:
+                                                type: string
+                                            message:
+                                                type: string
+                                            resolution:
+                                                type: string
+        post:
+            tags:
+                - Host Management
+            summary: Launch the add host workflow
+            description: Creates a workflow to add host into Blue XP Cloud Backup Application
+            operationId: LaunchAddHostWorkflow
+            parameters:
+                - name: version
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: x-account-id
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                description: Request body to add host into Blue XP Cloud Backup Application
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                addr:
+                                    type: string
+                                connector_id:
+                                    type: string
+                                host_id:
+                                    type: string
+                                install_method:
+                                    type: string
+                                install_params:
+                                    oneOf:
+                                        - $ref: '#/components/schemas/SSHInstallParams'
+                                        - $ref: '#/components/schemas/ManualInstallParams'
+                                plugin_port:
+                                    type: number
+                                    format: uint
+                                plugin_type:
+                                    type: string
+            responses:
+                "200":
+                    description: The response parameters for running getSSHFingerprint operation
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    err:
+                                        properties:
+                                            code:
+                                                type: string
+                                            message:
+                                                type: string
+                                            resolution:
+                                                type: string
+                                    fingerprint:
+                                        type: string
+                                    key_type:
+                                        type: string
+                "400":
+                    description: ""
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    error:
+                                        properties:
+                                            code:
+                                                type: string
+                                            message:
+                                                type: string
+                                            resolution:
+                                                type: string
+    /{version}/hosts/ssh-fingerprints:
+        post:
+            tags:
+                - Host Management
+            summary: Get SSH Fingerprint from application host
+            description: Get SSH Fingerprint from application host
+            operationId: getSSHFingerprint
+            parameters:
+                - name: version
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: x-account-id
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                description: Request body to fetch SSH Fingerprint
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                addr:
+                                    type: string
+                                connector_id:
+                                    type: string
+                                port:
+                                    type: number
+                                    format: uint
+                                private_key:
+                                    type: string
+                                username:
+                                    type: string
+            responses:
+                "200":
+                    description: The response parameters for running getSSHFingerprint operation
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    err:
+                                        properties:
+                                            code:
+                                                type: string
+                                            message:
+                                                type: string
+                                            resolution:
+                                                type: string
+                                    fingerprint:
+                                        type: string
+                                    key_type:
+                                        type: string
+                "400":
+                    description: ""
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    error:
+                                        properties:
+                                            code:
+                                                type: string
+                                            message:
+                                                type: string
+                                            resolution:
+                                                type: string
+servers:
+    - url: https://localhost:8080
+    - url: https://localhost:8081
+tags:
+    - name: Host Management
+      description: Everything about your pets

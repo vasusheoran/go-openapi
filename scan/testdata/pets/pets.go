@@ -31,6 +31,11 @@ type CreatePetResponse struct {
 	// openapi:default "12-sdf-1-321"
 	// openapi:example "12-sdf-1-321"
 	ID string `json:"id"`
+	// This is a sample field comment
+	// openapi:description Type of pet
+	// openapi:nullable
+	//// openapi:name category,  this is not read as of now using test/main.go
+	Type Category `json:"category"`
 }
 
 // GetPetByIDResponse ...
@@ -123,18 +128,8 @@ type PetsInterface interface {
 	// openapi:param name query string false --- Name of pet that needs to be updated
 	// openapi:param petId path string true --- ID of pet that needs to be updated
 	// openapi:param x-agent-id header string true --- Agent ID for the request
-	// openapi:body CreatePetRequest --- Request body to create Pets
-	// openapi:response 200 CreatePetResponse --- Response for CreatePet API
 	// openapi:response 200 CreatePetResponse --- OK
-	// openapi:response 400 ErrorResponse --- Error
 	CreatePet(name string) (*CreatePetResponse, error)
-	GetPetByID(petId string) (GetPetByIDResponse, error)
-	GetPets() error
-}
-
-type StoreInterface interface {
-	CreateStore() error
-	GetStore(id string) error
 }
 
 func main() {}
